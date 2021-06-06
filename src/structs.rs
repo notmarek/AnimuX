@@ -25,11 +25,6 @@ pub struct State {
     pub mal_client_id: Option<String>,
 }
 
-pub struct ActixRoute {
-    pub path: String,
-    pub route: Arc<Mutex<Route>>,
-}
-
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AnimeInfo {
     pub name: Option<String>,

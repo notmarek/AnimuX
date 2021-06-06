@@ -9,10 +9,10 @@ use routes::core::*;
 
 use structs::*;
 
-use std::{env, sync::Mutex};
+use std::env;
 
 use actix_cors::Cors;
-use actix_web::{App, HttpRequest, HttpServer, Responder, Route, http, middleware::Logger, web};
+use actix_web::{web, App, HttpServer};
 use googledrive::{Drive, GoogleDrive};
 
 use std::sync::Arc;

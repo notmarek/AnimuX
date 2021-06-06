@@ -1,12 +1,12 @@
-use actix_web::{Responder, HttpRequest, HttpResponse};
+use actix_web::{HttpRequest, HttpResponse, Responder};
 use hyper::server::conn::Http;
 
 use std::fs;
 
 use chrono::{DateTime, Utc};
 
+use crate::helpers::{file_sort, parse_files};
 use crate::structs::{File, ParsedFile};
-use crate::helpers::{parse_files, file_sort};
 
 pub async fn files(req: HttpRequest) -> impl Responder {
     let path = req.path();
@@ -17,7 +17,10 @@ pub async fn files(req: HttpRequest) -> impl Responder {
         let modification_time: DateTime<Utc> = metadata.modified().unwrap().into();
         let file: File = File {
             name: Some(path.as_ref().unwrap().file_name().into_string().unwrap()),
-            r#type: Some(String::from(match metadata.is_dir() {true => "directory", false => "file"})),
+            r#type: Some(String::from(match metadata.is_dir() {
+                true => "directory",
+                false => "file",
+            })),
             mtime: Some(modification_time.format("%a, %d %b %Y %T %Z").to_string()),
             size: Some(metadata.len()),
         };
@@ -25,5 +28,7 @@ pub async fn files(req: HttpRequest) -> impl Responder {
     });
     let mut parsed_files: Vec<ParsedFile> = parse_files(files);
     parsed_files.sort_by(|a, b| file_sort(a, b));
-    HttpResponse::Ok().content_type("application/json").body(serde_json::to_string(&parsed_files).unwrap())
+    HttpResponse::Ok()
+        .content_type("application/json")
+        .body(serde_json::to_string(&parsed_files).unwrap())
 }
