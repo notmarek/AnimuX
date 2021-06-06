@@ -9,8 +9,9 @@ use crate::structs::{File, ParsedFile};
 use crate::helpers::{parse_files, file_sort};
 
 pub async fn files(req: HttpRequest) -> impl Responder {
+    let path = req.path();
     let mut files: Vec<File> = Vec::new();
-    let paths: fs::ReadDir = fs::read_dir("/home/pi/Y/Animu/").unwrap();
+    let paths: fs::ReadDir = fs::read_dir(&format!("/home/pi/Y/Animu/{}", path)).unwrap();
     paths.into_iter().for_each(|path| {
         let metadata = path.as_ref().unwrap().metadata().unwrap();
         let modification_time: DateTime<Utc> = metadata.modified().unwrap().into();
