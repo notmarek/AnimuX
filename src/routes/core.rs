@@ -1,5 +1,4 @@
 use actix_web::{HttpRequest, HttpResponse, Responder};
-use hyper::server::conn::Http;
 
 use std::fs;
 

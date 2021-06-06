@@ -1,6 +1,4 @@
-use std::sync::{Arc, Mutex};
-
-use actix_web::Route;
+use std::sync::Arc;
 
 use crate::googledrive::Drive;
 
