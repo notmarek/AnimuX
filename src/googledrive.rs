@@ -58,6 +58,7 @@ impl GoogleDrive for Drive {
             .q(&format!("'{}' in parents and trashed=false", id))
             .include_team_drive_items(false)
             .spaces("drive")
+            .param("fields", "files(id,name,modifiedTime,size)")
             .doit()
             .await
             .unwrap()
@@ -111,8 +112,8 @@ impl GoogleDrive for Drive {
                 group: Some(String::new()),
                 episode: Some(String::new()),
                 r#type: Some(file_type),
-                mtime: None,
-                size: None,
+                mtime: Some(chrono::DateTime::parse_from_rfc3339(&file.modified_time.unwrap()).unwrap().format("%a, %d %b %Y %T %Z").to_string()),
+                size: Some(file.size.unwrap_or(String::new()).parse::<u64>().unwrap_or(0 as u64)),
                 mal_id: Some(0),
             };
         } else {
@@ -141,8 +142,8 @@ impl GoogleDrive for Drive {
                                 .to_string(),
                         ),
                         r#type: Some(file_type),
-                        mtime: None,
-                        size: None,
+                        mtime: Some(chrono::DateTime::parse_from_rfc3339(&file.modified_time.unwrap()).unwrap().format("%a, %d %b %Y %T %Z").to_string()),
+                        size: Some(file.size.unwrap_or(String::new()).parse::<u64>().unwrap_or(0 as u64)),
                         mal_id: {
                             if mal.len() < 1 {
                                 Some(0)
