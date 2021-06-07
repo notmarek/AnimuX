@@ -9,7 +9,7 @@ use std::lazy::SyncLazy;
 
 use anitomy::{Anitomy, ElementCategory};
 
-static ANIME: SyncLazy<Vec<AnimeInfo>> = SyncLazy::new(|| {
+pub static ANIME: SyncLazy<Vec<AnimeInfo>> = SyncLazy::new(|| {
     let contents = fs::read_to_string("map.json");
     let mal_info: Vec<AnimeInfo> = serde_json::from_str(&contents.unwrap()).unwrap();
     mal_info
@@ -18,6 +18,7 @@ static ANIME: SyncLazy<Vec<AnimeInfo>> = SyncLazy::new(|| {
 #[derive(Clone)]
 pub struct State {
     pub app_name: String,
+    pub base_path: String,
     pub drive: Option<Arc<Drive>>,
     pub mal_secret: Option<String>,
     pub mal_client_id: Option<String>,

@@ -2,11 +2,23 @@ use std::cmp::Ordering;
 
 use crate::structs::*;
 
+use crate::googledrive::{Drive, GoogleDrive};
 pub fn parse_files(files: Vec<File>) -> Vec<ParsedFile> {
     let mut parsed_files: Vec<ParsedFile> = Vec::new();
     files
         .into_iter()
         .for_each(|file| parsed_files.push(ParsedFile::from_file(file)));
+    parsed_files
+}
+
+pub async fn parse_google_files(
+    files: Vec<google_drive3::api::File>,
+    drive: &Drive,
+) -> Vec<ParsedFile> {
+    let mut parsed_files: Vec<ParsedFile> = Vec::new();
+    for file in files {
+        parsed_files.push(drive.parse_file(file).await)
+    }
     parsed_files
 }
 
