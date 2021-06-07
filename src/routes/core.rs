@@ -10,7 +10,8 @@ use crate::structs::{File, ParsedFile, State};
 pub async fn files(req: HttpRequest, data: web::Data<State>) -> impl Responder {
     let path = req
         .path()
-        .replace(&format!("{}GoogleDrive", data.base_path), "/");
+        .replace(&data.base_path, "/");
+        println!("{:#?}", path);
     let mut files: Vec<File> = Vec::new();
     let paths: fs::ReadDir = fs::read_dir(&format!("/home/pi/Y/Animu/{}", path)).unwrap();
     paths.into_iter().for_each(|path| {
