@@ -1,14 +1,16 @@
-use actix_web::{HttpRequest, HttpResponse, Responder};
+use actix_web::{HttpRequest, HttpResponse, Responder, web};
 
 use std::fs;
 
 use chrono::{DateTime, Utc};
 
 use crate::helpers::{file_sort, parse_files};
-use crate::structs::{File, ParsedFile};
+use crate::structs::{File, ParsedFile, State};
 
-pub async fn files(req: HttpRequest) -> impl Responder {
-    let path = req.path();
+pub async fn files(req: HttpRequest, data: web::Data<State>) -> impl Responder {
+    let path = req
+        .path()
+        .replace(&format!("{}GoogleDrive", data.base_path), "/");
     let mut files: Vec<File> = Vec::new();
     let paths: fs::ReadDir = fs::read_dir(&format!("/home/pi/Y/Animu/{}", path)).unwrap();
     paths.into_iter().for_each(|path| {
