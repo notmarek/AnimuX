@@ -28,6 +28,8 @@ async fn main() -> std::io::Result<()> {
         mal_client_id: None,
         mal_secret: None,
     };
+    let address: String = env::var("ADDRESS").unwrap_or(String::from("127.0.0.1"));
+    let port: String = env::var("PORT").unwrap_or(String::from("8080"));
 
     let drive_enabled: String = env::var("ENABLE_GDRIVE").unwrap_or(String::new());
     if drive_enabled.to_lowercase() == "true" || drive_enabled.to_lowercase() == "yes" {
@@ -88,7 +90,7 @@ async fn main() -> std::io::Result<()> {
         app = app.data(state.clone());
         app
     })
-    .bind(("127.0.0.1", 8080))?
+    .bind((address, port.parse::<u16>().unwrap()))?
     .run()
     .await
 }
