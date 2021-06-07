@@ -2,6 +2,7 @@
 
 mod googledrive;
 mod helpers;
+mod models;
 mod routes;
 mod structs;
 
@@ -18,6 +19,8 @@ use googledrive::{Drive, GoogleDrive};
 
 use std::sync::Arc;
 
+use crate::routes::user::register;
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     dotenv::dotenv().ok();
@@ -27,11 +30,25 @@ async fn main() -> std::io::Result<()> {
         drive: None,
         mal_client_id: None,
         mal_secret: None,
+        hcaptcha_enabled: false,
+        hcaptcha_secret: None,
+        hcaptcha_sitekey: None,
     };
     let address: String = env::var("ADDRESS").unwrap_or(String::from("127.0.0.1"));
     let port: String = env::var("PORT").unwrap_or(String::from("8080"));
-
+    let hcaptcha_enabled: String = env::var("HCAPTCHA_ENABLED").unwrap_or(String::new());
     let drive_enabled: String = env::var("ENABLE_GDRIVE").unwrap_or(String::new());
+    let mal_enabled: String = env::var("ENABLE_MAL").unwrap_or(String::new());
+
+    if hcaptcha_enabled.to_lowercase() == "true" || hcaptcha_enabled.to_lowercase() == "yes" {
+        println!("HCaptcha enabled.");
+        state.hcaptcha_enabled = true;
+        state.hcaptcha_sitekey =
+            Some(env::var("HCAPTCHA_SITEKEY").expect("HCAPTCHA_SITEKEY not found."));
+        state.hcaptcha_secret =
+            Some(env::var("HCAPTCHA_SECRET").expect("HCAPTCHA_SECRET not found."));
+    }
+
     if drive_enabled.to_lowercase() == "true" || drive_enabled.to_lowercase() == "yes" {
         println!("MAL enabled.");
         let drive_api_key: String = env::var("GDRIVE_API_KEY").expect("GDRIVE_API_KEY not found.");
@@ -41,7 +58,6 @@ async fn main() -> std::io::Result<()> {
         state.drive = Some(Arc::new(drive));
     }
 
-    let mal_enabled: String = env::var("ENABLE_MAL").unwrap_or(String::new());
     if mal_enabled.to_lowercase() == "true" || mal_enabled.to_lowercase() == "yes" {
         println!("Google Drive enabled.");
         let mal_secret: String = env::var("MAL_SECRET").expect("MAL_SECRET not found.");
@@ -84,7 +100,12 @@ async fn main() -> std::io::Result<()> {
                 web::post().to(mal::malupdateanimelist),
             );
         }
-
+        //
+        app = app.route(
+            &format!("{}user/register", &base_path),
+            web::post().to(register),
+        );
+        //
         app = app.route(&format!("{}", &base_path), web::get().to(files)); // Default route
         app = app.route(&format!("{}{{tail:.*}}", &base_path), web::get().to(files)); // Default route
         app = app.data(state.clone());

@@ -22,6 +22,9 @@ pub struct State {
     pub drive: Option<Arc<Drive>>,
     pub mal_secret: Option<String>,
     pub mal_client_id: Option<String>,
+    pub hcaptcha_enabled: bool,
+    pub hcaptcha_sitekey: Option<String>,
+    pub hcaptcha_secret: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
