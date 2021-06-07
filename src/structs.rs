@@ -32,6 +32,31 @@ pub struct AnimeInfo {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct MALReply {
+    pub code: String,
+    pub state: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct MALUser {
+    pub user: String,
+    pub token: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct MALAnime {
+    pub anime_id: u32,
+    pub token: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct MALAnimeUpdate {
+    pub anime_id: u32,
+    pub token: String,
+    pub status: String,
+    pub num_watched_episodes: u32,
+}
+#[derive(Debug, Serialize, Deserialize)]
 pub struct File {
     pub r#type: Option<String>,
     pub name: Option<String>,

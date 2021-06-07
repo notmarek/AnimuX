@@ -8,6 +8,7 @@ mod structs;
 use routes::core::*;
 use routes::gdrive::gdrive;
 
+use routes::mal;
 use structs::*;
 
 use std::env;
@@ -58,7 +59,29 @@ async fn main() -> std::io::Result<()> {
                 web::get().to(gdrive),
             );
         }
-        if mal_enabled.to_lowercase() == "true" || mal_enabled.to_lowercase() == "yes" {}
+        if mal_enabled.to_lowercase() == "true" || mal_enabled.to_lowercase() == "yes" {
+            app = app.route(&format!("{}map", &base_path), web::get().to(mal::map));
+            app = app.route(
+                &format!("{}mal/link", &base_path),
+                web::get().to(mal::malurl),
+            );
+            app = app.route(
+                &format!("{}mal/anime", &base_path),
+                web::post().to(mal::malanime),
+            );
+            app = app.route(
+                &format!("{}mal/user", &base_path),
+                web::post().to(mal::maluser),
+            );
+            app = app.route(
+                &format!("{}mal/oauth2", &base_path),
+                web::post().to(mal::malauth),
+            );
+            app = app.route(
+                &format!("{}mal/list/update/anime", &base_path),
+                web::post().to(mal::malupdateanimelist),
+            );
+        }
 
         app = app.route(&format!("{}", &base_path), web::get().to(files)); // Default route
         app = app.route(&format!("{}{{tail:.*}}", &base_path), web::get().to(files)); // Default route
