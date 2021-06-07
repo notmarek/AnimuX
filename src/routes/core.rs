@@ -1,4 +1,4 @@
-use actix_web::{HttpRequest, HttpResponse, Responder, web};
+use actix_web::{web, HttpRequest, HttpResponse, Responder};
 
 use std::fs;
 
@@ -9,9 +9,12 @@ use crate::structs::{File, ParsedFile, State};
 
 pub async fn files(req: HttpRequest, data: web::Data<State>) -> impl Responder {
     let path = req
-        .path()
+        .match_info()
+        .get("tail")
+        .unwrap()
+        .parse::<String>()
+        .unwrap()
         .replace(&data.base_path, "/");
-        println!("{:#?}", path);
     let mut files: Vec<File> = Vec::new();
     let paths: fs::ReadDir = fs::read_dir(&format!("/home/pi/Y/Animu/{}", path)).unwrap();
     paths.into_iter().for_each(|path| {
