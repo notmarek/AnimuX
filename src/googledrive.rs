@@ -142,7 +142,7 @@ impl GoogleDrive for Drive {
                                 .to_string(),
                         ),
                         r#type: Some(file_type),
-                        mtime: Some(chrono::DateTime::parse_from_rfc3339(&file.modified_time.unwrap()).unwrap().format("%a, %d %b %Y %T %Z").to_string()),
+                        mtime: Some(chrono::DateTime::parse_from_rfc3339(&file.modified_time.unwrap()).unwrap().format("%a, %d %b %Y %T %Z").to_string().replace("+00:00", "UTC")),
                         size: Some(file.size.unwrap_or(String::new()).parse::<u64>().unwrap_or(0 as u64)),
                         mal_id: {
                             if mal.len() < 1 {
