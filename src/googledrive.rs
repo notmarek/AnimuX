@@ -58,7 +58,7 @@ impl GoogleDrive for Drive {
             .q(&format!("'{}' in parents and trashed=false", id))
             .include_team_drive_items(false)
             .spaces("drive")
-            .param("fields", "files(id,name,modifiedTime,size)")
+            .param("fields", "files(id,name,modifiedTime,size,mimeType)")
             .doit()
             .await
             .unwrap()
