@@ -18,6 +18,7 @@ pub async fn register(data: web::Json<JsonUserAuth>, state: web::Data<State>) ->
         data.username.clone(),
         data.password.clone(),
         Roles::Member,
+        state.secret.clone(),
         &state.database,
     );
 
@@ -52,15 +53,13 @@ pub async fn login(data: web::Json<JsonUserAuth>, state: web::Data<State>) -> im
     );
     match user {
         Ok(u) => {
-            println!("{:#?}", &u);
-            println!("{:#?}", User::from_token(u.clone(), state.secret.clone(), &state.database));
             return HttpResponse::Ok().content_type("application/json").body(
                 Response {
                     status: String::from("success"),
                     data: u,
                 }
                 .json(),
-            )
+            );
         }
         Err(e) => {
             return HttpResponse::Ok().content_type("application/json").body(
@@ -72,5 +71,4 @@ pub async fn login(data: web::Json<JsonUserAuth>, state: web::Data<State>) -> im
             );
         }
     }
-
 }

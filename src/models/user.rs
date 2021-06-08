@@ -1,5 +1,6 @@
 use std::convert::TryInto;
 
+use crate::models::invites::Invite;
 use crate::schema::users;
 use base64::{decode, encode};
 use diesel::prelude::*;
@@ -7,12 +8,12 @@ use diesel::r2d2;
 use libaes::Cipher;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-
 #[derive(Debug, Serialize, Deserialize)]
 pub struct JsonUserAuth {
     pub username: String,
     pub password: String,
     pub hcaptcha_userverify: Option<String>,
+    pub invite: Option<String>,
 }
 
 #[derive(Debug, Queryable, Serialize, Deserialize)]
@@ -40,6 +41,7 @@ pub struct NewUser {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct LoggedIn {
     pub token: String,
+    pub message: String,
 }
 impl User {
     pub fn create_token(self, secret: String) -> String {
@@ -69,12 +71,21 @@ impl User {
     pub fn register(
         raw_username: String,
         raw_password: String,
+        invite: String,
         raw_role: Roles,
-        db: &r2d2::Pool<r2d2::ConnectionManager<PgConnection>>,
-    ) -> Result<User, String> {
+        secret: String,
+        pool: &r2d2::Pool<r2d2::ConnectionManager<PgConnection>>,
+    ) -> Result<LoggedIn, String> {
         use crate::schema::users::dsl::*;
+        let invite = match Invite::get(invite, &pool) {
+            Ok(i) => i,
+            Err(e) => return Err(e),
+        };
 
-        let db = db.get().unwrap();
+        if invite.used {
+            return Err(String::from("Invite already used."));
+        }
+        let db = pool.get().unwrap();
 
         let mut hasher = Sha256::new();
         hasher.update(raw_password);
@@ -91,7 +102,13 @@ impl User {
                     .values(user)
                     .get_result::<User>(&db)
                 {
-                    Ok(u) => Ok(u),
+                    Ok(u) => {
+                        invite.mark_as_used(&pool);
+                        Ok(LoggedIn {
+                            token: u.create_token(secret),
+                            message: String::from("Account successfully created."),
+                        })
+                    }
                     Err(e) => Err(format!("{}", e)),
                 }
             }
@@ -102,7 +119,7 @@ impl User {
         raw_password: String,
         secret: String,
         db: &r2d2::Pool<r2d2::ConnectionManager<PgConnection>>,
-    ) -> Result<String, String> {
+    ) -> Result<LoggedIn, String> {
         use crate::schema::users::dsl::*;
 
         let db = db.get().unwrap();
@@ -115,7 +132,10 @@ impl User {
             .filter(password.eq(hashed_password))
             .first::<User>(&db)
         {
-            Ok(u) => Ok(u.create_token(secret)),
+            Ok(u) => Ok(LoggedIn {
+                token: u.create_token(secret),
+                message: String::from("Succesfully logged in."),
+            }),
             Err(_) => Err(String::from("Username or password do not match.")),
         }
     }
