@@ -230,6 +230,7 @@ dependencies = [
 name = "animu_actix"
 version = "0.1.0"
 dependencies = [
+ "actix-service",
  "actix-web",
  "anitomy",
  "async-trait",
@@ -238,6 +239,7 @@ dependencies = [
  "diesel",
  "diesel-derive-enum",
  "dotenv",
+ "futures",
  "google-drive3",
  "http",
  "hyper",

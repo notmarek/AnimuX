@@ -1,7 +1,6 @@
 use crate::schema::invites;
 use diesel::prelude::*;
 use diesel::r2d2;
-use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Queryable)]
 pub struct Invite {

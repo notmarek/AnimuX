@@ -1,4 +1,5 @@
 #![feature(once_cell)]
+#![feature(async_closure)]
 #[macro_use]
 extern crate diesel;
 
@@ -10,8 +11,8 @@ mod routes;
 mod schema;
 mod structs;
 
-use diesel::pg::PgConnection;
-use diesel::r2d2;
+use actix_web::dev::ServiceResponse;
+use actix_web::HttpResponse;
 
 use routes::core::*;
 use routes::gdrive::gdrive;
@@ -21,11 +22,13 @@ use structs::*;
 
 use std::env;
 
+use actix_service::Service;
 use actix_web::{web, App, HttpServer};
 use googledrive::{Drive, GoogleDrive};
 
 use std::sync::Arc;
 
+use crate::models::user::User;
 use crate::routes::user::login;
 use crate::routes::user::register;
 
@@ -80,7 +83,54 @@ async fn main() -> std::io::Result<()> {
     let base_path: String = env::var("BASE_PATH").unwrap_or("/".to_string());
     state.base_path = base_path.clone();
     HttpServer::new(move || {
-        let mut app = App::new();
+        let st = state.clone();
+        let mut app = App::new().wrap_fn(move |req, srv| {
+            let mut res = None;
+            let mut fut = None;
+            if !&req.path().contains(&format!("{}user", st.base_path))
+                && (!&req.headers().contains_key("authorization")
+                    || match User::from_token(
+                        String::from(
+                            req.headers()
+                                .get("authorization")
+                                .unwrap()
+                                .to_str()
+                                .unwrap(),
+                        ),
+                        st.secret.clone(),
+                        &st.database,
+                    ) {
+                        Ok(_) => false,
+                        Err(_) => true,
+                    })
+            {
+                let r = ServiceResponse::new(
+                    req.into_parts().0,
+                    HttpResponse::Forbidden()
+                        .content_type("application/json")
+                        .body(
+                            Response {
+                                status: String::from("error"),
+                                data: String::from("Access denied."),
+                            }
+                            .json(),
+                        ),
+                );
+                res = Some(r);
+            } else {
+                fut = Some(srv.call(req));
+            }
+
+            async {
+                let r;
+                if res.is_none() {
+                    r = fut.unwrap().await.unwrap();
+                } else {
+                    r = res.unwrap();
+                }
+                Ok(r)
+            }
+        });
         if drive_enabled.to_lowercase() == "true" || drive_enabled.to_lowercase() == "yes" {
             app = app.route(&format!("{}GoogleDrive", &base_path), web::get().to(gdrive));
             app = app.route(

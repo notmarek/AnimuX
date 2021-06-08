@@ -23,7 +23,7 @@ pub struct User {
     pub password: String,
     pub role: i32,
 }
-
+#[allow(dead_code)]
 #[derive(Debug)]
 pub enum Roles {
     Member = 0,
@@ -60,9 +60,13 @@ impl User {
         let db = db.get().unwrap();
         let key: &[u8; 16] = &secret.as_bytes()[..16].try_into().unwrap();
         let cipher = Cipher::new_128(key);
-        let decrypted = cipher.cbc_decrypt(b"0000000000000000", &decode(token).unwrap()[..]);
-        let data = String::from_utf8(decrypted).unwrap();
-        let data: User = serde_json::from_str(&data).unwrap();
+        let decoded = &decode(token).unwrap_or(Vec::new());
+        if decoded.len() == 0 {
+            return Err(String::from("Encrypted string seems fucked."))
+        }
+        let decrypted: Vec<u8> = cipher.cbc_decrypt(b"0000000000000000", &decoded[..]);        
+        let data = String::from_utf8(decrypted).unwrap_or(String::new());
+        let data: User = serde_json::from_str(&data).unwrap_or(User {id: 0, username: String::new(), password: String::new(), role: 0});
         match users.filter(id.eq(&data.id)).first::<User>(&db) {
             Ok(u) => Ok(u),
             Err(e) => Err(format!("{}", e)),

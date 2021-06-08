@@ -1,6 +1,6 @@
 use actix_web::{web, HttpResponse, Responder};
 
-use crate::models::user::{JsonUserAuth, NewUser, Roles, User};
+use crate::models::user::{JsonUserAuth, Roles, User};
 use crate::structs::{Response, State};
 
 pub async fn register(data: web::Json<JsonUserAuth>, state: web::Data<State>) -> impl Responder {
