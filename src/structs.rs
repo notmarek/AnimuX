@@ -81,6 +81,16 @@ pub struct File {
     pub mtime: Option<String>,
     pub size: Option<u64>,
 }
+#[derive(Debug, Serialize, Deserialize)]
+pub struct HCaptchaResponse {
+    pub success: bool,
+    pub challange_ts: Option<String>,
+    pub hostname: Option<String>,
+    pub credit: Option<bool>,
+    pub error_codes: Option<Vec<String>>,
+    pub score: Option<f64>,
+    pub score_reason: Option<Vec<String>>,
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ParsedFile {
