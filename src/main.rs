@@ -1,15 +1,22 @@
 #![feature(once_cell)]
+#[macro_use]
+extern crate diesel;
 
+mod database;
 mod googledrive;
 mod helpers;
 mod models;
 mod routes;
+mod schema;
 mod structs;
+
+use diesel::pg::PgConnection;
+use diesel::r2d2;
 
 use routes::core::*;
 use routes::gdrive::gdrive;
-
 use routes::mal;
+
 use structs::*;
 
 use std::env;
@@ -24,6 +31,7 @@ use crate::routes::user::register;
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     dotenv::dotenv().ok();
+    let db = database::establish_connection();
     let mut state: State = State {
         app_name: String::from("Animu"),
         base_path: String::new(),
@@ -33,6 +41,7 @@ async fn main() -> std::io::Result<()> {
         hcaptcha_enabled: false,
         hcaptcha_secret: None,
         hcaptcha_sitekey: None,
+        database: db,
     };
     let address: String = env::var("ADDRESS").unwrap_or(String::from("127.0.0.1"));
     let port: String = env::var("PORT").unwrap_or(String::from("8080"));

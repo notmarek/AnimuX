@@ -2,12 +2,16 @@ use std::sync::Arc;
 
 use crate::googledrive::Drive;
 
+use actix_web::{HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
 
 use std::fs;
 use std::lazy::SyncLazy;
 
 use anitomy::{Anitomy, ElementCategory};
+
+use diesel::prelude::*;
+use diesel::r2d2;
 
 pub static ANIME: SyncLazy<Vec<AnimeInfo>> = SyncLazy::new(|| {
     let contents = fs::read_to_string("map.json");
@@ -25,8 +29,19 @@ pub struct State {
     pub hcaptcha_enabled: bool,
     pub hcaptcha_sitekey: Option<String>,
     pub hcaptcha_secret: Option<String>,
+    pub database: r2d2::Pool<r2d2::ConnectionManager<PgConnection>>,
+}
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Response<T: Serialize> {
+    pub status: String,
+    pub data: T,
 }
 
+impl<T: Serialize> Response<T> {
+    pub fn json(self) -> String {
+        serde_json::to_string(&self).unwrap()
+    }
+}
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AnimeInfo {
     pub name: Option<String>,
