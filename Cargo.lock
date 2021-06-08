@@ -233,6 +233,7 @@ dependencies = [
  "actix-web",
  "anitomy",
  "async-trait",
+ "base64 0.13.0",
  "chrono",
  "diesel",
  "diesel-derive-enum",
@@ -241,6 +242,7 @@ dependencies = [
  "http",
  "hyper",
  "hyper-rustls",
+ "libaes",
  "pkce",
  "reqwest",
  "serde",
@@ -939,6 +941,12 @@ name = "lazy_static"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
+
+[[package]]
+name = "libaes"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "418b4f9baffc036d77ba09a06a58dce71379fb8ea795bad33717eaa5aae1b406"
 
 [[package]]
 name = "libc"

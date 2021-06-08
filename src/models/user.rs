@@ -1,6 +1,10 @@
+use std::convert::TryInto;
+
 use crate::schema::users;
+use base64::{decode, encode};
 use diesel::prelude::*;
 use diesel::r2d2;
+use libaes::Cipher;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
@@ -33,8 +37,35 @@ pub struct NewUser {
     pub password: String,
     pub role: i32,
 }
-
+#[derive(Debug, Serialize, Deserialize)]
+pub struct LoggedIn {
+    pub token: String,
+}
 impl User {
+    pub fn create_token(self, secret: String) -> String {
+        let data = serde_json::to_string(&self).unwrap();
+        let key: &[u8; 16] = &secret.as_bytes()[..16].try_into().unwrap();
+        let cipher = Cipher::new_128(key);
+        let encrypted = cipher.cbc_encrypt(b"0000000000000000", &data.as_bytes()[..]);
+        encode(encrypted)
+    }
+    pub fn from_token(
+        token: String,
+        secret: String,
+        db: &r2d2::Pool<r2d2::ConnectionManager<PgConnection>>,
+    ) -> Result<Self, String> {
+        use crate::schema::users::dsl::*;
+        let db = db.get().unwrap();
+        let key: &[u8; 16] = &secret.as_bytes()[..16].try_into().unwrap();
+        let cipher = Cipher::new_128(key);
+        let decrypted = cipher.cbc_decrypt(b"0000000000000000", &decode(token).unwrap()[..]);
+        let data = String::from_utf8(decrypted).unwrap();
+        let data: User = serde_json::from_str(&data).unwrap();
+        match users.filter(id.eq(&data.id)).first::<User>(&db) {
+            Ok(u) => Ok(u),
+            Err(e) => Err(format!("{}", e)),
+        }
+    }
     pub fn register(
         raw_username: String,
         raw_password: String,
@@ -65,12 +96,13 @@ impl User {
                 }
             }
         }
-    } 
+    }
     pub fn login(
         raw_username: String,
         raw_password: String,
+        secret: String,
         db: &r2d2::Pool<r2d2::ConnectionManager<PgConnection>>,
-    ) -> Result<User, String> {
+    ) -> Result<String, String> {
         use crate::schema::users::dsl::*;
 
         let db = db.get().unwrap();
@@ -78,11 +110,13 @@ impl User {
         let mut hasher = Sha256::new();
         hasher.update(raw_password);
         let hashed_password = format!("{:x}", hasher.finalize());
-        match users.filter(username.eq(&raw_username)).filter(password.eq(hashed_password)).first::<User>(&db) {
-            Ok(u) => Ok(u),
-            Err(_) => {
-                Err(String::from("Username or password do not match."))
-            }
+        match users
+            .filter(username.eq(&raw_username))
+            .filter(password.eq(hashed_password))
+            .first::<User>(&db)
+        {
+            Ok(u) => Ok(u.create_token(secret)),
+            Err(_) => Err(String::from("Username or password do not match.")),
         }
     }
 }

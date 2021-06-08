@@ -42,6 +42,7 @@ async fn main() -> std::io::Result<()> {
         hcaptcha_enabled: false,
         hcaptcha_secret: None,
         hcaptcha_sitekey: None,
+        secret: env::var("SECRET").unwrap_or(String::from("weaksecret")),
         database: db,
     };
     let address: String = env::var("ADDRESS").unwrap_or(String::from("127.0.0.1"));

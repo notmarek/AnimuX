@@ -29,6 +29,7 @@ pub struct State {
     pub hcaptcha_enabled: bool,
     pub hcaptcha_sitekey: Option<String>,
     pub hcaptcha_secret: Option<String>,
+    pub secret: String,
     pub database: r2d2::Pool<r2d2::ConnectionManager<PgConnection>>,
 }
 #[derive(Debug, Serialize, Deserialize, Clone)]
