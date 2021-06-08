@@ -17,6 +17,7 @@ pub async fn register(data: web::Json<JsonUserAuth>, state: web::Data<State>) ->
     let user = User::register(
         data.username.clone(),
         data.password.clone(),
+        data.invite.as_ref().unwrap().clone(),
         Roles::Member,
         state.secret.clone(),
         &state.database,

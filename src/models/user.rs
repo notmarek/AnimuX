@@ -103,7 +103,10 @@ impl User {
                     .get_result::<User>(&db)
                 {
                     Ok(u) => {
-                        invite.mark_as_used(&pool);
+                        match invite.mark_as_used(&pool) {
+                            Ok(_) => (),
+                            Err(e) => return Err(e),
+                        };
                         Ok(LoggedIn {
                             token: u.create_token(secret),
                             message: String::from("Account successfully created."),
