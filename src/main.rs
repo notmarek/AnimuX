@@ -11,9 +11,13 @@ mod routes;
 mod schema;
 mod structs;
 
+use actix_web::Route;
 use actix_web::dev::ServiceResponse;
 use actix_web::HttpResponse;
 
+use actix_web::guard::Method;
+use actix_web::http::HeaderName;
+use http::HeaderValue;
 use routes::core::*;
 use routes::gdrive::gdrive;
 use routes::mal;
@@ -21,6 +25,7 @@ use routes::mal;
 use structs::*;
 
 use std::env;
+use std::str::FromStr;
 
 use actix_service::Service;
 use actix_web::{web, App, HttpServer};
@@ -29,6 +34,7 @@ use googledrive::{Drive, GoogleDrive};
 use std::sync::Arc;
 
 use crate::models::user::User;
+use crate::routes::admin::create_invite;
 use crate::routes::user::login;
 use crate::routes::user::register;
 
@@ -87,8 +93,13 @@ async fn main() -> std::io::Result<()> {
         let mut app = App::new().wrap_fn(move |req, srv| {
             let mut res = None;
             let mut fut = None;
-            if !&req.path().contains(&format!("{}user", st.base_path))
+            if req.method() == http::Method::OPTIONS {
+                fut = Some(srv.call(req));
+                // let r = ServiceResponse::new(req.into_parts().0, HttpResponse::Ok().finish());
+                // res = Some(r);
+            } else if !&req.path().contains(&format!("{}user", st.base_path))
                 && (!&req.headers().contains_key("authorization")
+                    || &req.headers().get("authorization").unwrap().len() < &5
                     || match User::from_token(
                         String::from(
                             req.headers()
@@ -122,12 +133,21 @@ async fn main() -> std::io::Result<()> {
             }
 
             async {
-                let r;
+                let mut r;
                 if res.is_none() {
                     r = fut.unwrap().await.unwrap();
                 } else {
                     r = res.unwrap();
                 }
+                let headers = r.headers_mut();
+                headers.insert(
+                    HeaderName::from_str("Access-Control-Allow-Origin").unwrap(),
+                    HeaderValue::from_static("*"),
+                );
+                headers.insert(
+                    HeaderName::from_str("Access-Control-Allow-Headers").unwrap(),
+                    HeaderValue::from_static("Content-Type, Authorization"),
+                );
                 Ok(r)
             }
         });
@@ -144,6 +164,7 @@ async fn main() -> std::io::Result<()> {
                 &format!("{}mal/link", &base_path),
                 web::get().to(mal::malurl),
             );
+            app = app.route(&format!("{}admin/create_invite", &base_path), Route::new().method(http::Method::OPTIONS).to(create_invite));
             app = app.route(
                 &format!("{}mal/anime", &base_path),
                 web::post().to(mal::malanime),
@@ -167,6 +188,7 @@ async fn main() -> std::io::Result<()> {
             web::post().to(register),
         );
         app = app.route(&format!("{}user/login", &base_path), web::post().to(login));
+        app = app.route(&format!("{}admin/create_invite", &base_path), web::post().to(create_invite));
         //
         app = app.route(&format!("{}", &base_path), web::get().to(files)); // Default route
         app = app.route(&format!("{}{{tail:.*}}", &base_path), web::get().to(files)); // Default route
