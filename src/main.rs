@@ -26,6 +26,7 @@ use googledrive::{Drive, GoogleDrive};
 
 use std::sync::Arc;
 
+use crate::routes::user::login;
 use crate::routes::user::register;
 
 #[actix_web::main]
@@ -114,6 +115,7 @@ async fn main() -> std::io::Result<()> {
             &format!("{}user/register", &base_path),
             web::post().to(register),
         );
+        app = app.route(&format!("{}user/login", &base_path), web::post().to(login));
         //
         app = app.route(&format!("{}", &base_path), web::get().to(files)); // Default route
         app = app.route(&format!("{}{{tail:.*}}", &base_path), web::get().to(files)); // Default route

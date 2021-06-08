@@ -65,5 +65,24 @@ impl User {
                 }
             }
         }
+    } 
+    pub fn login(
+        raw_username: String,
+        raw_password: String,
+        db: &r2d2::Pool<r2d2::ConnectionManager<PgConnection>>,
+    ) -> Result<User, String> {
+        use crate::schema::users::dsl::*;
+
+        let db = db.get().unwrap();
+
+        let mut hasher = Sha256::new();
+        hasher.update(raw_password);
+        let hashed_password = format!("{:x}", hasher.finalize());
+        match users.filter(username.eq(&raw_username)).filter(password.eq(hashed_password)).first::<User>(&db) {
+            Ok(u) => Ok(u),
+            Err(_) => {
+                Err(String::from("Username or password do not match."))
+            }
+        }
     }
 }

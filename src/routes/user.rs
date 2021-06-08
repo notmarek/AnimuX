@@ -21,10 +21,8 @@ pub async fn register(data: web::Json<JsonUserAuth>, state: web::Data<State>) ->
         &state.database,
     );
 
-
     match user {
         Ok(u) => {
-            println!("{:#?}", u);
             return HttpResponse::Ok().content_type("application/json").body(
                 Response {
                     status: String::from("success"),
@@ -32,7 +30,7 @@ pub async fn register(data: web::Json<JsonUserAuth>, state: web::Data<State>) ->
                 }
                 .json(),
             );
-        },
+        }
         Err(e) => {
             return HttpResponse::Ok().content_type("application/json").body(
                 Response {
@@ -43,17 +41,32 @@ pub async fn register(data: web::Json<JsonUserAuth>, state: web::Data<State>) ->
             );
         }
     }
-    // return Response { status: String::from("error"), data: "Captcha response couldn't be found." }.send()
-    // return HttpResponse::Ok().content_type("application/json").body(
-    //     Response {
-    //         status: String::from("success"),
-    //         data: user,
-    //     }
-    //     .json(),
-    // );
 }
 
 pub async fn login(data: web::Json<JsonUserAuth>, state: web::Data<State>) -> impl Responder {
-    println!("{:#?}", data);
-    "haha"
+    let user = User::login(
+        data.username.clone(),
+        data.password.clone(),
+        &state.database,
+    );
+    match user {
+        Ok(u) => {
+            return HttpResponse::Ok().content_type("application/json").body(
+                Response {
+                    status: String::from("success"),
+                    data: u,
+                }
+                .json(),
+            )
+        }
+        Err(e) => {
+            return HttpResponse::Ok().content_type("application/json").body(
+                Response {
+                    status: String::from("error"),
+                    data: e,
+                }
+                .json(),
+            );
+        }
+    }
 }
