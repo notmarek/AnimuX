@@ -18,6 +18,7 @@ use actix_web::HttpResponse;
 use actix_web::guard::Method;
 use actix_web::http::HeaderName;
 use http::HeaderValue;
+use http::StatusCode;
 use routes::core::*;
 use routes::gdrive::gdrive;
 use routes::mal;
@@ -139,6 +140,7 @@ async fn main() -> std::io::Result<()> {
                 } else {
                     r = res.unwrap();
                 }
+                *r.response_mut().status_mut() = StatusCode::OK;
                 let headers = r.headers_mut();
                 headers.insert(
                     HeaderName::from_str("Access-Control-Allow-Origin").unwrap(),
