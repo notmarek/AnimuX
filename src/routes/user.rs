@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::os::linux::raw::stat;
 
 use actix_web::{web, HttpResponse, Responder};
 
@@ -57,6 +58,22 @@ pub async fn register(data: web::Json<JsonUserAuth>, state: web::Data<State>) ->
 
     match user {
         Ok(u) => {
+            if state.navidrome_enabled {
+                state
+                    .navidrome
+                    .clone()
+                    .unwrap()
+                    .create_account(data.username.clone(), data.password.clone())
+                    .await;
+            }
+            if state.mango_enabled {
+                state
+                    .mango
+                    .clone()
+                    .unwrap()
+                    .create_account(data.username.clone(), data.password.clone())
+                    .await;
+            }
             return HttpResponse::Ok().json(Response {
                 status: String::from("success"),
                 data: u,

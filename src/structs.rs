@@ -1,6 +1,8 @@
 use std::sync::Arc;
 
 use crate::googledrive::Drive;
+use crate::mango::Mango;
+use crate::navidrome::Navidrome;
 
 use serde::{Deserialize, Serialize};
 
@@ -30,6 +32,10 @@ pub struct State {
     pub hcaptcha_secret: Option<String>,
     pub secret: String,
     pub database: r2d2::Pool<r2d2::ConnectionManager<PgConnection>>,
+    pub mango_enabled: bool,
+    pub mango: Option<Mango>,
+    pub navidrome_enabled: bool,
+    pub navidrome: Option<Navidrome>,
 }
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Response<T: Serialize> {

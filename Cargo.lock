@@ -237,6 +237,7 @@ dependencies = [
  "async-trait",
  "base64 0.13.0",
  "chrono",
+ "cookie",
  "diesel",
  "diesel-derive-enum",
  "dotenv",

@@ -92,6 +92,9 @@ impl User {
         secret: String,
         pool: &r2d2::Pool<r2d2::ConnectionManager<PgConnection>>,
     ) -> Result<LoggedIn, String> {
+        if raw_password.len() < 8 {
+            return Err(String::from("Your password has to be at least 8 chars long."))
+        }
         use crate::schema::users::dsl::*;
         let invite = match Invite::get(invite, &pool) {
             Ok(i) => i,

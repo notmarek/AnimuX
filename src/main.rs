@@ -10,15 +10,18 @@ mod models;
 mod routes;
 mod schema;
 mod structs;
+mod mango;
+mod navidrome;
 
 use actix_web::dev::ServiceResponse;
 use actix_web::HttpResponse;
 use actix_web::Route;
 
-use actix_web::guard::Method;
 use actix_web::http::HeaderName;
 use http::HeaderValue;
 use http::StatusCode;
+use mango::Mango;
+use navidrome::Navidrome;
 use routes::core::*;
 use routes::gdrive::gdrive;
 use routes::mal;
@@ -56,12 +59,34 @@ async fn main() -> std::io::Result<()> {
         hcaptcha_sitekey: None,
         secret: env::var("SECRET").unwrap_or(String::from("weaksecret")),
         database: db,
+        mango_enabled: false,
+        mango: None,
+        navidrome_enabled: false,
+        navidrome: None,
     };
     let address: String = env::var("ADDRESS").unwrap_or(String::from("127.0.0.1"));
     let port: String = env::var("PORT").unwrap_or(String::from("8080"));
     let hcaptcha_enabled: String = env::var("HCAPTCHA_ENABLED").unwrap_or(String::new());
     let drive_enabled: String = env::var("ENABLE_GDRIVE").unwrap_or(String::new());
     let mal_enabled: String = env::var("ENABLE_MAL").unwrap_or(String::new());
+    let navidrome_enabled: String = env::var("ENABLE_NAVIDROME").unwrap_or(String::new());
+    let mango_enabled: String = env::var("ENABLE_MANGO").unwrap_or(String::new());
+
+    if navidrome_enabled.to_lowercase() == "true" || navidrome_enabled.to_lowercase() == "yes" {
+        let navidrome_username: String = env::var("NAVIDROME_USERNAME").expect("NAVIDROME_USERNAME not found.");
+        let navidrome_password: String = env::var("NAVIDROME_PASSWORD").expect("NAVIDROME_PASSWORD not found.");
+        let navidrome_url: String = env::var("NAVIDROME_URL").expect("NAVIDROME_URL not found.");
+        state.navidrome_enabled = true;
+        state.navidrome = Some(Navidrome::new(navidrome_url, navidrome_username, navidrome_password).await.unwrap());
+    }
+
+    if mango_enabled.to_lowercase() == "true" || mango_enabled.to_lowercase() == "yes" {
+        let mango_username: String = env::var("MANGO_USERNAME").expect("MANGO_USERNAME not found.");
+        let mango_password: String = env::var("MANGO_PASSWORD").expect("MANGO_PASSWORD not found.");
+        let mango_url: String = env::var("MANGO_URL").expect("MANGO_URL not found.");
+        state.mango_enabled = true;
+        state.mango = Some(Mango::new(mango_url, mango_username, mango_password).await.unwrap());
+    }
 
     if hcaptcha_enabled.to_lowercase() == "true" || hcaptcha_enabled.to_lowercase() == "yes" {
         println!("HCaptcha enabled.");
