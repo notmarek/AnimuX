@@ -30,14 +30,20 @@ impl Invite {
         }
     }
 
+    pub fn get_all(pool: &r2d2::Pool<r2d2::ConnectionManager<PgConnection>>) -> Vec<Self> {
+        use crate::schema::invites::dsl::*;
+        let db = pool.get().unwrap();
+        invites.get_results::<Self>(&db).unwrap()
+    }
+
     pub fn generate(db: &r2d2::Pool<r2d2::ConnectionManager<PgConnection>>) -> Self {
         use crate::schema::invites::dsl::*;
         let db = db.get().unwrap();
         let s: String = rand::thread_rng()
-        .sample_iter(&Alphanumeric)
-        .take(8)
-        .map(char::from)
-        .collect();
+            .sample_iter(&Alphanumeric)
+            .take(8)
+            .map(char::from)
+            .collect();
         let inv = NewInvite { invite: s };
         match diesel::insert_into(invites)
             .values(inv)

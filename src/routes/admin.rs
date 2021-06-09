@@ -1,11 +1,7 @@
-use std::collections::HashMap;
-
 use actix_web::{web, HttpResponse, Responder};
-use sha2::digest::generic_array::typenum::private::IsGreaterPrivate;
 
-use crate::models::invites::{Invite, NewInvite};
-use crate::models::user::{JsonUserAuth, Roles, User};
-use crate::structs::{HCaptchaResponse, Response, State};
+use crate::models::invites::Invite;
+use crate::structs::{Response, State};
 
 pub async fn create_invite(state: web::Data<State>) -> impl Responder {
     let inv = Invite::generate(&state.database);
@@ -16,4 +12,15 @@ pub async fn create_invite(state: web::Data<State>) -> impl Responder {
         }
         .json(),
     );
+}
+
+pub async fn get_all_invites(state: web::Data<State>) -> impl Responder {
+    let invites: Vec<Invite> = Invite::get_all(&state.database);
+    HttpResponse::Ok().content_type("application/json").body(
+        Response {
+            status: String::from("success"),
+            data: invites,
+        }
+        .json(),
+    )
 }

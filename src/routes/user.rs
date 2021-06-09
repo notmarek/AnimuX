@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 
 use actix_web::{web, HttpResponse, Responder};
-use sha2::digest::generic_array::typenum::private::IsGreaterPrivate;
 
 use crate::models::user::{JsonUserAuth, Roles, User};
 use crate::structs::{HCaptchaResponse, Response, State};
 use reqwest;
+
 pub async fn register(data: web::Json<JsonUserAuth>, state: web::Data<State>) -> impl Responder {
     if state.hcaptcha_enabled {
         if data.hcaptcha_userverify.is_none() {
@@ -22,7 +22,15 @@ pub async fn register(data: web::Json<JsonUserAuth>, state: web::Data<State>) ->
         form.insert("secret", state.hcaptcha_secret.as_ref().unwrap());
         form.insert("sitekey", state.hcaptcha_sitekey.as_ref().unwrap());
         let client = reqwest::Client::new();
-        let resp: HCaptchaResponse = client.post("https://hcaptcha.com/siteverify").form(&form).send().await.unwrap().json().await.unwrap();
+        let resp: HCaptchaResponse = client
+            .post("https://hcaptcha.com/siteverify")
+            .form(&form)
+            .send()
+            .await
+            .unwrap()
+            .json()
+            .await
+            .unwrap();
         if !resp.success {
             return HttpResponse::Ok().content_type("application/json").body(
                 Response {
@@ -100,4 +108,15 @@ pub async fn login(data: web::Json<JsonUserAuth>, state: web::Data<State>) -> im
             );
         }
     }
+}
+
+pub async fn all_users(state: web::Data<State>) -> impl Responder {
+    let users: Vec<User> = User::get_all(&state.database);
+    HttpResponse::Ok().content_type("application/json").body(
+        Response {
+            status: String::from("success"),
+            data: users,
+        }
+        .json(),
+    )
 }

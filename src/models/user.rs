@@ -62,16 +62,28 @@ impl User {
         let cipher = Cipher::new_128(key);
         let decoded = &decode(token).unwrap_or(Vec::new());
         if decoded.len() == 0 {
-            return Err(String::from("Encrypted string seems fucked."))
+            return Err(String::from("Encrypted string seems fucked."));
         }
-        let decrypted: Vec<u8> = cipher.cbc_decrypt(b"0000000000000000", &decoded[..]);        
+        let decrypted: Vec<u8> = cipher.cbc_decrypt(b"0000000000000000", &decoded[..]);
         let data = String::from_utf8(decrypted).unwrap_or(String::new());
-        let data: User = serde_json::from_str(&data).unwrap_or(User {id: 0, username: String::new(), password: String::new(), role: 0});
+        let data: User = serde_json::from_str(&data).unwrap_or(User {
+            id: 0,
+            username: String::new(),
+            password: String::new(),
+            role: 0,
+        });
         match users.filter(id.eq(&data.id)).first::<User>(&db) {
             Ok(u) => Ok(u),
             Err(e) => Err(format!("{}", e)),
         }
     }
+
+    pub fn get_all(pool: &r2d2::Pool<r2d2::ConnectionManager<PgConnection>>) -> Vec<Self> {
+        use crate::schema::users::dsl::*;
+        let db = pool.get().unwrap();
+        users.get_results::<Self>(&db).unwrap()
+    }
+
     pub fn register(
         raw_username: String,
         raw_password: String,

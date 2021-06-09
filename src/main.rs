@@ -36,6 +36,8 @@ use std::sync::Arc;
 
 use crate::models::user::User;
 use crate::routes::admin::create_invite;
+use crate::routes::admin::get_all_invites;
+use crate::routes::user::all_users;
 use crate::routes::user::login;
 use crate::routes::user::register;
 
@@ -184,14 +186,14 @@ async fn main() -> std::io::Result<()> {
                 web::post().to(mal::malupdateanimelist),
             );
         }
-        //
         app = app.route(
             &format!("{}user/register", &base_path),
             web::post().to(register),
         );
         app = app.route(&format!("{}user/login", &base_path), web::post().to(login));
+        app = app.route(&format!("{}user/all", &base_path), web::get().to(all_users));
         app = app.route(&format!("{}admin/create_invite", &base_path), web::post().to(create_invite));
-        //
+        app = app.route(&format!("{}admin/invites", &base_path), web::get().to(get_all_invites));
         app = app.route(&format!("{}", &base_path), web::get().to(files)); // Default route
         app = app.route(&format!("{}{{tail:.*}}", &base_path), web::get().to(files)); // Default route
         app = app.data(state.clone());
