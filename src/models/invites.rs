@@ -2,8 +2,9 @@ use crate::schema::invites;
 use diesel::prelude::*;
 use diesel::r2d2;
 use rand::{distributions::Alphanumeric, Rng};
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Queryable)]
+#[derive(Debug, Queryable, Serialize, Deserialize)]
 pub struct Invite {
     pub id: i32,
     pub invite: String,
