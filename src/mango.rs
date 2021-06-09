@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use cookie::{Cookie, CookieJar};
-use http::HeaderValue;
 
 #[derive(Clone)]
 pub struct Mango {
@@ -46,8 +45,7 @@ impl Mango {
             ("password", &password as &str),
         ])
         .collect();
-        let r = self
-            .client
+        self.client
             .post(&format!("{}/admin/user/edit", self.url))
             .form(&form)
             .header(

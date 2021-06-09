@@ -6,20 +6,18 @@ extern crate diesel;
 mod database;
 mod googledrive;
 mod helpers;
+mod mango;
 mod models;
+mod navidrome;
 mod routes;
 mod schema;
 mod structs;
-mod mango;
-mod navidrome;
 
 use actix_web::dev::ServiceResponse;
 use actix_web::HttpResponse;
-use actix_web::Route;
 
 use actix_web::http::HeaderName;
 use http::HeaderValue;
-use http::StatusCode;
 use mango::Mango;
 use navidrome::Navidrome;
 use routes::core::*;
@@ -73,19 +71,36 @@ async fn main() -> std::io::Result<()> {
     let mango_enabled: String = env::var("ENABLE_MANGO").unwrap_or(String::new());
 
     if navidrome_enabled.to_lowercase() == "true" || navidrome_enabled.to_lowercase() == "yes" {
-        let navidrome_username: String = env::var("NAVIDROME_USERNAME").expect("NAVIDROME_USERNAME not found.");
-        let navidrome_password: String = env::var("NAVIDROME_PASSWORD").expect("NAVIDROME_PASSWORD not found.");
+        println!("Navidrome enabled.");
+        let navidrome_username: String =
+            env::var("NAVIDROME_USERNAME").expect("NAVIDROME_USERNAME not found.");
+        let navidrome_password: String =
+            env::var("NAVIDROME_PASSWORD").expect("NAVIDROME_PASSWORD not found.");
         let navidrome_url: String = env::var("NAVIDROME_URL").expect("NAVIDROME_URL not found.");
         state.navidrome_enabled = true;
-        state.navidrome = Some(Navidrome::new(navidrome_url, navidrome_username, navidrome_password).await.unwrap());
+        state.navidrome = Some(
+            Navidrome::new(navidrome_url, navidrome_username, navidrome_password)
+                .await
+                .unwrap(),
+        );
+        println!(
+            "Navidrome logged in as '{}'.",
+            state.navidrome.clone().unwrap().login.username
+        );
     }
 
     if mango_enabled.to_lowercase() == "true" || mango_enabled.to_lowercase() == "yes" {
+        println!("Mango enabled.");
         let mango_username: String = env::var("MANGO_USERNAME").expect("MANGO_USERNAME not found.");
         let mango_password: String = env::var("MANGO_PASSWORD").expect("MANGO_PASSWORD not found.");
         let mango_url: String = env::var("MANGO_URL").expect("MANGO_URL not found.");
         state.mango_enabled = true;
-        state.mango = Some(Mango::new(mango_url, mango_username, mango_password).await.unwrap());
+        state.mango = Some(
+            Mango::new(mango_url, mango_username, mango_password)
+                .await
+                .unwrap(),
+        );
+        println!("Mango logged in.");
     }
 
     if hcaptcha_enabled.to_lowercase() == "true" || hcaptcha_enabled.to_lowercase() == "yes" {
@@ -122,9 +137,8 @@ async fn main() -> std::io::Result<()> {
             let mut res = None;
             let mut fut = None;
             if req.method() == http::Method::OPTIONS {
-                fut = Some(srv.call(req));
-                // let r = ServiceResponse::new(req.into_parts().0, HttpResponse::Ok().finish());
-                // res = Some(r);
+                let r = ServiceResponse::new(req.into_parts().0, HttpResponse::Ok().finish());
+                res = Some(r);
             } else if !&req.path().contains(&format!("{}user", st.base_path))
                 && (!&req.headers().contains_key("authorization")
                     || &req.headers().get("authorization").unwrap().len() < &5
@@ -167,7 +181,6 @@ async fn main() -> std::io::Result<()> {
                 } else {
                     r = res.unwrap();
                 }
-                *r.response_mut().status_mut() = StatusCode::OK;
                 let headers = r.headers_mut();
                 headers.insert(
                     HeaderName::from_str("Access-Control-Allow-Origin").unwrap(),
@@ -196,10 +209,6 @@ async fn main() -> std::io::Result<()> {
                     web::get().to(mal::malurl),
                 )
                 .route(
-                    &format!("{}admin/create_invite", &base_path),
-                    Route::new().method(http::Method::OPTIONS).to(create_invite),
-                )
-                .route(
                     &format!("{}mal/anime", &base_path),
                     web::post().to(mal::malanime),
                 )
@@ -222,7 +231,10 @@ async fn main() -> std::io::Result<()> {
                 web::post().to(register),
             )
             .route(&format!("{}user/login", &base_path), web::post().to(login))
-            .route(&format!("{}user/all", &base_path), web::get().to(all_users))
+            .route(
+                &format!("{}admin/all_users", &base_path),
+                web::get().to(all_users),
+            )
             .route(
                 &format!("{}admin/create_invite", &base_path),
                 web::post().to(create_invite),
