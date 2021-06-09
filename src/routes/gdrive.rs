@@ -18,19 +18,10 @@ pub async fn gdrive(req: HttpRequest, data: web::Data<State>) -> impl Responder 
     if path == PathBuf::from("/") {
         new_path = "root".to_string();
     } else {
-        new_path = path
-            .components()
-            .last()
-            .unwrap()
-            .as_os_str()
-            .to_str()
-            .unwrap()
-            .to_string();
+        new_path = path.file_name().unwrap().to_str().unwrap().to_string();
     }
     let google_files = drive.get_files_in_folder(&new_path).await.files.unwrap();
     let mut files = parse_google_files(google_files, drive).await;
     files.sort_by(|a, b| file_sort(a, b));
-    HttpResponse::Ok()
-        .content_type("application/json")
-        .body(serde_json::to_string(&files).unwrap())
+    HttpResponse::Ok().json(files)
 }

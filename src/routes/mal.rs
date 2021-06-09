@@ -1,4 +1,8 @@
 use actix_web::{web, HttpResponse, Responder};
+use async_std::io::Bytes;
+use futures::FutureExt;
+use futures::Stream;
+use futures::StreamExt;
 
 use std::collections::HashMap;
 
@@ -8,6 +12,19 @@ use crate::structs::MALReply;
 use crate::structs::MALUser;
 use crate::structs::State;
 use crate::structs::ANIME;
+
+pub trait JsonStream {
+    fn json_stream(self, r: reqwest::Response) -> HttpResponse;
+}
+
+impl JsonStream for actix_web::HttpResponseBuilder {
+    fn json_stream(mut self, r: reqwest::Response) -> HttpResponse {
+        self.content_type("application/json").streaming(
+            r.bytes_stream()
+                .map(|it| Ok::<_, actix_web::Error>(it.unwrap())),
+        )
+    }
+}
 
 // #[post("/mal/list/update/anime", format = "json", data = "<data>")]
 pub async fn malupdateanimelist(data: web::Json<MALAnimeUpdate>) -> impl Responder {
@@ -28,22 +45,22 @@ pub async fn malupdateanimelist(data: web::Json<MALAnimeUpdate>) -> impl Respond
         .send()
         .await
         .unwrap();
-    HttpResponse::Ok()
-        .content_type("application/json")
-        .body(r.text().await.unwrap())
+    HttpResponse::Ok().json_stream(r)
 }
 
 // #[post("/mal/oauth2", format = "json", data = "<auth>")]
 pub async fn malauth(auth: web::Json<MALReply>, config: web::Data<State>) -> impl Responder {
-    let mut form = HashMap::new();
-    form.insert("client_id", config.mal_client_id.as_ref().unwrap().as_str());
-    form.insert(
-        "client_secret",
-        config.mal_secret.as_ref().unwrap().as_str(),
-    );
-    form.insert("code", &auth.code);
-    form.insert("code_verifier", &auth.state);
-    form.insert("grant_type", "authorization_code");
+    let form: HashMap<&str, &str> = std::array::IntoIter::new([
+        ("client_id", config.mal_client_id.as_ref().unwrap().as_str()),
+        (
+            "client_secret",
+            config.mal_secret.as_ref().unwrap().as_str(),
+        ),
+        ("code", &auth.code),
+        ("code_verifier", &auth.state),
+        ("grant_type", "authorization_code"),
+    ])
+    .collect();
     let client = reqwest::Client::new();
     let r = client
         .post("https://myanimelist.net/v1/oauth2/token")
@@ -51,9 +68,7 @@ pub async fn malauth(auth: web::Json<MALReply>, config: web::Data<State>) -> imp
         .send()
         .await
         .unwrap();
-    HttpResponse::Ok()
-        .content_type("application/json")
-        .body(r.text().await.unwrap())
+    HttpResponse::Ok().json_stream(r)
 }
 
 // #[post("/mal/user", format = "json", data = "<data>")]
@@ -68,9 +83,7 @@ pub async fn maluser(data: web::Json<MALUser>) -> impl Responder {
         .send()
         .await
         .unwrap();
-    HttpResponse::Ok()
-        .content_type("application/json")
-        .body(r.text().await.unwrap())
+    HttpResponse::Ok().json_stream(r)
 }
 
 // #[post("/mal/anime", format = "json", data = "<data>")]
@@ -85,9 +98,7 @@ pub async fn malanime(data: web::Json<MALAnime>) -> impl Responder {
         .send()
         .await
         .unwrap();
-    HttpResponse::Ok()
-        .content_type("application/json")
-        .body(r.text().await.unwrap())
+    HttpResponse::Ok().json_stream(r)
 }
 
 //#[get("/mal/link")]
@@ -99,7 +110,5 @@ pub async fn malurl() -> impl Responder {
 
 // //#[get("/map")]
 pub async fn map() -> impl Responder {
-    HttpResponse::Ok()
-        .content_type("application/json")
-        .body(serde_json::to_string(&ANIME.get(..).unwrap().to_vec()).unwrap())
+    HttpResponse::Ok().json(&*ANIME)
 }

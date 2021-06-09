@@ -11,9 +11,9 @@ mod routes;
 mod schema;
 mod structs;
 
-use actix_web::Route;
 use actix_web::dev::ServiceResponse;
 use actix_web::HttpResponse;
+use actix_web::Route;
 
 use actix_web::guard::Method;
 use actix_web::http::HeaderName;
@@ -156,47 +156,59 @@ async fn main() -> std::io::Result<()> {
             }
         });
         if drive_enabled.to_lowercase() == "true" || drive_enabled.to_lowercase() == "yes" {
-            app = app.route(&format!("{}GoogleDrive", &base_path), web::get().to(gdrive));
-            app = app.route(
-                &format!("{}GoogleDrive/{{tail:.*}}", &base_path),
-                web::get().to(gdrive),
-            );
+            app = app
+                .route(&format!("{}GoogleDrive", &base_path), web::get().to(gdrive))
+                .route(
+                    &format!("{}GoogleDrive/{{tail:.*}}", &base_path),
+                    web::get().to(gdrive),
+                );
         }
         if mal_enabled.to_lowercase() == "true" || mal_enabled.to_lowercase() == "yes" {
-            app = app.route(&format!("{}map", &base_path), web::get().to(mal::map));
-            app = app.route(
-                &format!("{}mal/link", &base_path),
-                web::get().to(mal::malurl),
-            );
-            app = app.route(&format!("{}admin/create_invite", &base_path), Route::new().method(http::Method::OPTIONS).to(create_invite));
-            app = app.route(
-                &format!("{}mal/anime", &base_path),
-                web::post().to(mal::malanime),
-            );
-            app = app.route(
-                &format!("{}mal/user", &base_path),
-                web::post().to(mal::maluser),
-            );
-            app = app.route(
-                &format!("{}mal/oauth2", &base_path),
-                web::post().to(mal::malauth),
-            );
-            app = app.route(
-                &format!("{}mal/list/update/anime", &base_path),
-                web::post().to(mal::malupdateanimelist),
-            );
+            app = app
+                .route(&format!("{}map", &base_path), web::get().to(mal::map))
+                .route(
+                    &format!("{}mal/link", &base_path),
+                    web::get().to(mal::malurl),
+                )
+                .route(
+                    &format!("{}admin/create_invite", &base_path),
+                    Route::new().method(http::Method::OPTIONS).to(create_invite),
+                )
+                .route(
+                    &format!("{}mal/anime", &base_path),
+                    web::post().to(mal::malanime),
+                )
+                .route(
+                    &format!("{}mal/user", &base_path),
+                    web::post().to(mal::maluser),
+                )
+                .route(
+                    &format!("{}mal/oauth2", &base_path),
+                    web::post().to(mal::malauth),
+                )
+                .route(
+                    &format!("{}mal/list/update/anime", &base_path),
+                    web::post().to(mal::malupdateanimelist),
+                );
         }
-        app = app.route(
-            &format!("{}user/register", &base_path),
-            web::post().to(register),
-        );
-        app = app.route(&format!("{}user/login", &base_path), web::post().to(login));
-        app = app.route(&format!("{}user/all", &base_path), web::get().to(all_users));
-        app = app.route(&format!("{}admin/create_invite", &base_path), web::post().to(create_invite));
-        app = app.route(&format!("{}admin/invites", &base_path), web::get().to(get_all_invites));
-        app = app.route(&format!("{}", &base_path), web::get().to(files)); // Default route
-        app = app.route(&format!("{}{{tail:.*}}", &base_path), web::get().to(files)); // Default route
-        app = app.data(state.clone());
+        app = app
+            .route(
+                &format!("{}user/register", &base_path),
+                web::post().to(register),
+            )
+            .route(&format!("{}user/login", &base_path), web::post().to(login))
+            .route(&format!("{}user/all", &base_path), web::get().to(all_users))
+            .route(
+                &format!("{}admin/create_invite", &base_path),
+                web::post().to(create_invite),
+            )
+            .route(
+                &format!("{}admin/invites", &base_path),
+                web::get().to(get_all_invites),
+            )
+            .route(&format!("{}", &base_path), web::get().to(files)) // Default route
+            .route(&format!("{}{{tail:.*}}", &base_path), web::get().to(files)) // Default route
+            .data(state.clone());
         app
     })
     .bind((address, port.parse::<u16>().unwrap()))?

@@ -60,7 +60,7 @@ impl User {
         let db = db.get().unwrap();
         let key: &[u8; 16] = &secret.as_bytes()[..16].try_into().unwrap();
         let cipher = Cipher::new_128(key);
-        let decoded = &decode(token).unwrap_or(Vec::new());
+        let decoded = &decode(token).unwrap_or(vec![]);
         if decoded.len() == 0 {
             return Err(String::from("Encrypted string seems fucked."));
         }

@@ -76,7 +76,8 @@ pub struct MALAnimeUpdate {
 }
 #[derive(Debug, Serialize, Deserialize)]
 pub struct File {
-    pub r#type: Option<String>,
+    #[serde(rename = "type")]
+    pub kind: Option<String>,
     pub name: Option<String>,
     pub mtime: Option<String>,
     pub size: Option<u64>,
@@ -98,7 +99,8 @@ pub struct ParsedFile {
     pub anime: Option<String>,
     pub group: Option<String>,
     pub episode: Option<String>,
-    pub r#type: Option<String>,
+    #[serde(rename = "type")]
+    pub kind: Option<String>,
     pub mtime: Option<String>,
     pub size: Option<u64>,
     pub mal_id: Option<u32>,
@@ -106,10 +108,10 @@ pub struct ParsedFile {
 
 impl ParsedFile {
     pub fn from_file(file: File) -> Self {
-        let anime_info: Vec<AnimeInfo> = ANIME.get(..).unwrap().to_vec();
+        let anime_info: Vec<AnimeInfo> = ANIME.clone();
         let parsed_file: ParsedFile;
 
-        if file.r#type.as_ref().unwrap() == "file"
+        if file.kind.as_ref().unwrap() == "file"
             && !(file.name.as_ref().unwrap().contains(".mkv")
                 || file.name.as_ref().unwrap().contains(".mp4"))
         {
@@ -118,7 +120,7 @@ impl ParsedFile {
                 anime: file.name,
                 group: Some(String::new()),
                 episode: Some(String::new()),
-                r#type: file.r#type,
+                kind: file.kind,
                 mtime: file.mtime,
                 size: file.size,
                 mal_id: Some(0),
@@ -131,7 +133,7 @@ impl ParsedFile {
                         .into_iter()
                         .filter(|ye| {
                             ye.name.as_ref().unwrap()
-                                == &e.get(ElementCategory::AnimeTitle).unwrap_or("").to_string()
+                                == e.get(ElementCategory::AnimeTitle).unwrap_or("")
                         })
                         .collect::<Vec<AnimeInfo>>();
                     parsed_file = ParsedFile {
@@ -147,16 +149,10 @@ impl ParsedFile {
                                 .unwrap_or("")
                                 .to_string(),
                         ),
-                        r#type: file.r#type,
+                        kind: file.kind,
                         mtime: file.mtime,
                         size: file.size,
-                        mal_id: {
-                            if mal.len() < 1 {
-                                Some(0)
-                            } else {
-                                mal[0].mal
-                            }
-                        },
+                        mal_id: mal.get(0).map_or(Some(0), |i| i.mal),
                     }
                 }
             }
