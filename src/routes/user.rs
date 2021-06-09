@@ -17,10 +17,12 @@ pub async fn register(data: web::Json<JsonUserAuth>, state: web::Data<State>) ->
                 .json(),
             );
         }
-        let mut form = HashMap::new();
-        form.insert("response", data.hcaptcha_userverify.as_ref().unwrap());
-        form.insert("secret", state.hcaptcha_secret.as_ref().unwrap());
-        form.insert("sitekey", state.hcaptcha_sitekey.as_ref().unwrap());
+        let form: HashMap<_, _> = std::array::IntoIter::new([
+            ("response", data.hcaptcha_userverify.as_ref().unwrap()),
+            ("secret", state.hcaptcha_secret.as_ref().unwrap()),
+            ("sitekey", state.hcaptcha_sitekey.as_ref().unwrap()),
+        ])
+        .collect();
         let client = reqwest::Client::new();
         let resp: HCaptchaResponse = client
             .post("https://hcaptcha.com/siteverify")
@@ -32,23 +34,17 @@ pub async fn register(data: web::Json<JsonUserAuth>, state: web::Data<State>) ->
             .await
             .unwrap();
         if !resp.success {
-            return HttpResponse::Ok().content_type("application/json").body(
-                Response {
-                    status: String::from("error"),
-                    data: "Can't you even do the captcha man?",
-                }
-                .json(),
-            );
+            return HttpResponse::Ok().json(Response {
+                status: String::from("error"),
+                data: "Can't you even do the captcha man?",
+            });
         }
     }
     if data.invite.is_none() || data.invite.as_ref().unwrap().len() < 8 {
-        return HttpResponse::Ok().content_type("application/json").body(
-            Response {
-                status: String::from("error"),
-                data: "You need to specify a valid invite.",
-            }
-            .json(),
-        );
+        return HttpResponse::Ok().json(Response {
+            status: String::from("error"),
+            data: "You need to specify a valid invite.",
+        });
     }
     let user = User::register(
         data.username.clone(),
@@ -61,22 +57,16 @@ pub async fn register(data: web::Json<JsonUserAuth>, state: web::Data<State>) ->
 
     match user {
         Ok(u) => {
-            return HttpResponse::Ok().content_type("application/json").body(
-                Response {
-                    status: String::from("success"),
-                    data: u,
-                }
-                .json(),
-            );
+            return HttpResponse::Ok().json(Response {
+                status: String::from("success"),
+                data: u,
+            });
         }
         Err(e) => {
-            return HttpResponse::Ok().content_type("application/json").body(
-                Response {
-                    status: String::from("error"),
-                    data: e,
-                }
-                .json(),
-            );
+            return HttpResponse::Ok().json(Response {
+                status: String::from("error"),
+                data: e,
+            });
         }
     }
 }
@@ -90,33 +80,24 @@ pub async fn login(data: web::Json<JsonUserAuth>, state: web::Data<State>) -> im
     );
     match user {
         Ok(u) => {
-            return HttpResponse::Ok().content_type("application/json").body(
-                Response {
-                    status: String::from("success"),
-                    data: u,
-                }
-                .json(),
-            );
+            return HttpResponse::Ok().json(Response {
+                status: String::from("success"),
+                data: u,
+            });
         }
         Err(e) => {
-            return HttpResponse::Ok().content_type("application/json").body(
-                Response {
-                    status: String::from("error"),
-                    data: e,
-                }
-                .json(),
-            );
+            return HttpResponse::Ok().json(Response {
+                status: String::from("error"),
+                data: e,
+            });
         }
     }
 }
 
 pub async fn all_users(state: web::Data<State>) -> impl Responder {
     let users: Vec<User> = User::get_all(&state.database);
-    HttpResponse::Ok().content_type("application/json").body(
-        Response {
-            status: String::from("success"),
-            data: users,
-        }
-        .json(),
-    )
+    HttpResponse::Ok().json(Response {
+        status: String::from("success"),
+        data: users,
+    })
 }

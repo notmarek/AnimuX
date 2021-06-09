@@ -4,11 +4,10 @@ use crate::structs::*;
 
 use crate::googledrive::{Drive, GoogleDrive};
 pub fn parse_files(files: Vec<File>) -> Vec<ParsedFile> {
-    let mut parsed_files: Vec<ParsedFile> = Vec::new();
     files
         .into_iter()
-        .for_each(|file| parsed_files.push(ParsedFile::from_file(file)));
-    parsed_files
+        .map(|file| ParsedFile::from_file(file))
+        .collect()
 }
 
 pub async fn parse_google_files(
@@ -23,31 +22,27 @@ pub async fn parse_google_files(
 }
 
 pub fn file_sort(a: &ParsedFile, b: &ParsedFile) -> Ordering {
-    if a.r#type.as_ref().unwrap() == &"file".to_string()
-        && b.r#type.as_ref().unwrap() == &"file".to_string()
-        && a.anime.as_ref().unwrap_or(&"~~~".to_string())
-            == b.anime.as_ref().unwrap_or(&"~~~".to_string())
+    if a.kind.as_ref().unwrap() == "file"
+        && b.kind.as_ref().unwrap() == "file"
+        && a.anime.as_ref().map_or("~~~", |it| it.as_str())
+            == b.anime.as_ref().map_or("~~~", |it| it.as_str())
     {
         a.episode
             .as_ref()
-            .unwrap_or(&"~~~".to_string())
-            .to_lowercase()
+            .map_or_else(|| "~~~".to_string(), |v| v.to_lowercase())
             .cmp(
                 &b.episode
                     .as_ref()
-                    .unwrap_or(&"~~~".to_string())
-                    .to_lowercase(),
+                    .map_or_else(|| "~~~".to_string(), |v| v.to_lowercase()),
             )
     } else {
         a.anime
             .as_ref()
-            .unwrap_or(&"~~~".to_string())
-            .to_lowercase()
+            .map_or_else(|| "~~~".to_string(), |v| v.to_lowercase())
             .cmp(
                 &b.anime
                     .as_ref()
-                    .unwrap_or(&"~~~".to_string())
-                    .to_lowercase(),
+                    .map_or_else(|| "~~~".to_string(), |v| v.to_lowercase()),
             )
     }
 }

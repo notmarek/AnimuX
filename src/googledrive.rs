@@ -45,7 +45,7 @@ impl GoogleDrive for Drive {
             auth,
         );
         Self {
-            hub: hub,
+            hub,
             api_key: api_key.to_string(),
         }
     }
@@ -82,7 +82,7 @@ impl GoogleDrive for Drive {
             .1
     }
     async fn parse_file(&self, file: google_drive3::api::File) -> ParsedFile {
-        let anime_info: Vec<AnimeInfo> = ANIME.get(..).unwrap().to_vec();
+        let anime_info: Vec<AnimeInfo> = ANIME.clone();
         let parsed_file: ParsedFile;
         let url;
         let file_type = match file
@@ -111,9 +111,18 @@ impl GoogleDrive for Drive {
                 anime: file.name,
                 group: Some(String::new()),
                 episode: Some(String::new()),
-                r#type: Some(file_type),
-                mtime: Some(chrono::DateTime::parse_from_rfc3339(&file.modified_time.unwrap()).unwrap().format("%a, %d %b %Y %T %Z").to_string()),
-                size: Some(file.size.unwrap_or(String::new()).parse::<u64>().unwrap_or(0 as u64)),
+                kind: Some(file_type),
+                mtime: Some(
+                    chrono::DateTime::parse_from_rfc3339(&file.modified_time.unwrap())
+                        .unwrap()
+                        .format("%a, %d %b %Y %T %Z")
+                        .to_string(),
+                ),
+                size: Some(
+                    file.size
+                        .and_then(|s| s.parse::<u64>().ok())
+                        .unwrap_or(0_u64),
+                ),
                 mal_id: Some(0),
             };
         } else {
@@ -124,7 +133,7 @@ impl GoogleDrive for Drive {
                         .into_iter()
                         .filter(|i| {
                             i.name.as_ref().unwrap()
-                                == &e.get(ElementCategory::AnimeTitle).unwrap_or("").to_string()
+                                == e.get(ElementCategory::AnimeTitle).unwrap_or("")
                         })
                         .collect::<Vec<AnimeInfo>>();
                     parsed_file = ParsedFile {
@@ -141,16 +150,21 @@ impl GoogleDrive for Drive {
                                 .unwrap_or("")
                                 .to_string(),
                         ),
-                        r#type: Some(file_type),
-                        mtime: Some(chrono::DateTime::parse_from_rfc3339(&file.modified_time.unwrap()).unwrap().format("%a, %d %b %Y %T %Z").to_string().replace("+00:00", "UTC")),
-                        size: Some(file.size.unwrap_or(String::new()).parse::<u64>().unwrap_or(0 as u64)),
-                        mal_id: {
-                            if mal.len() < 1 {
-                                Some(0)
-                            } else {
-                                mal[0].mal
-                            }
-                        },
+                        kind: Some(file_type),
+                        mtime: Some(
+                            chrono::DateTime::parse_from_rfc3339(&file.modified_time.unwrap())
+                                .unwrap()
+                                .format("%a, %d %b %Y %T %Z")
+                                .to_string()
+                                .replace("+00:00", "UTC"),
+                        ),
+                        size: Some(
+                            file.size
+                                .unwrap_or(String::new())
+                                .parse::<u64>()
+                                .unwrap_or(0 as u64),
+                        ),
+                        mal_id: mal.get(0).map_or(Some(0), |mal| mal.mal),
                     }
                 }
             }
