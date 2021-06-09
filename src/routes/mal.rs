@@ -18,7 +18,7 @@ pub trait JsonStream {
 }
 
 impl JsonStream for actix_web::HttpResponseBuilder {
-    fn json_stream(self, r: reqwest::Response) -> HttpResponse {
+    fn json_stream(mut self, r: reqwest::Response) -> HttpResponse {
         self.content_type("application/json").streaming(
             r.bytes_stream()
                 .map(|it| Ok::<_, actix_web::Error>(it.unwrap())),
