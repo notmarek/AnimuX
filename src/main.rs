@@ -38,6 +38,7 @@ use std::sync::Arc;
 use crate::models::user::User;
 use crate::routes::admin::create_invite;
 use crate::routes::admin::get_all_invites;
+use crate::routes::images::upload;
 use crate::routes::user::all_users;
 use crate::routes::user::login;
 use crate::routes::user::register;
@@ -61,6 +62,7 @@ async fn main() -> std::io::Result<()> {
         mango: None,
         navidrome_enabled: false,
         navidrome: None,
+        default_upload_path: None,
     };
     let address: String = env::var("ADDRESS").unwrap_or(String::from("127.0.0.1"));
     let port: String = env::var("PORT").unwrap_or(String::from("8080"));
@@ -69,6 +71,7 @@ async fn main() -> std::io::Result<()> {
     let mal_enabled: String = env::var("ENABLE_MAL").unwrap_or(String::new());
     let navidrome_enabled: String = env::var("ENABLE_NAVIDROME").unwrap_or(String::new());
     let mango_enabled: String = env::var("ENABLE_MANGO").unwrap_or(String::new());
+    let image_upload_enabled: String = env::var("ENABLE_UPLOADER").unwrap_or(String::new());
 
     if navidrome_enabled.to_lowercase() == "true" || navidrome_enabled.to_lowercase() == "yes" {
         println!("Navidrome enabled.");
@@ -87,6 +90,13 @@ async fn main() -> std::io::Result<()> {
             "Navidrome logged in as '{}'.",
             state.navidrome.clone().unwrap().login.username
         );
+    }
+
+    if image_upload_enabled.to_lowercase() == "true" || image_upload_enabled.to_lowercase() == "yes"
+    {
+        println!("Image uploader enabled.");
+        let uploader_path: String = env::var("UPLOADER_PATH").expect("UPLOADER_PATH not found.");
+        state.default_upload_path = Some(uploader_path);
     }
 
     if mango_enabled.to_lowercase() == "true" || mango_enabled.to_lowercase() == "yes" {
@@ -224,6 +234,14 @@ async fn main() -> std::io::Result<()> {
                     &format!("{}mal/list/update/anime", &base_path),
                     web::post().to(mal::malupdateanimelist),
                 );
+        }
+        if image_upload_enabled.to_lowercase() == "true"
+            || image_upload_enabled.to_lowercase() == "yes"
+        {
+            app = app.route(
+                &format!("{}images/upload", &base_path),
+                web::post().to(upload),
+            )
         }
         app = app
             .route(

@@ -36,6 +36,7 @@ pub struct State {
     pub mango: Option<Mango>,
     pub navidrome_enabled: bool,
     pub navidrome: Option<Navidrome>,
+    pub default_upload_path: Option<String>,
 }
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Response<T: Serialize> {

@@ -30,3 +30,5 @@ actix-service = "2.0.0"
 rand = "0.8"
 async-std = "1"
 cookie = "0.15.0"
+actix-multipart = { git = "https://github.com/veselysps/actix-web", branch = "master" }
+mime-db = "1.4.0"

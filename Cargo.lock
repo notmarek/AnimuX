@@ -73,6 +73,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "actix-multipart"
+version = "0.4.0-beta.4"
+source = "git+https://github.com/veselysps/actix-web?branch=master#2f89cbaf1c8af5e450bad224785485cfb6c8a969"
+dependencies = [
+ "actix-utils",
+ "actix-web 4.0.0-beta.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "bytes",
+ "derive_more",
+ "futures-core",
+ "futures-util",
+ "httparse",
+ "local-waker",
+ "log 0.4.14",
+ "mime 0.3.16",
+ "twoway",
+]
+
+[[package]]
 name = "actix-router"
 version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -154,6 +172,44 @@ dependencies = [
 [[package]]
 name = "actix-web"
 version = "4.0.0-beta.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ff12e933051557d700b0fcad20fe25b9ca38395cc87bbc5aeaddaef17b937a2f"
+dependencies = [
+ "actix-codec",
+ "actix-http",
+ "actix-macros",
+ "actix-router",
+ "actix-rt",
+ "actix-server",
+ "actix-service",
+ "actix-utils",
+ "actix-web-codegen",
+ "ahash",
+ "bytes",
+ "derive_more",
+ "either",
+ "encoding_rs",
+ "futures-core",
+ "futures-util",
+ "itoa",
+ "language-tags",
+ "log 0.4.14",
+ "mime 0.3.16",
+ "once_cell",
+ "pin-project",
+ "regex",
+ "serde",
+ "serde_json",
+ "serde_urlencoded",
+ "smallvec",
+ "socket2",
+ "time 0.2.26",
+ "url 2.2.2",
+]
+
+[[package]]
+name = "actix-web"
+version = "4.0.0-beta.6"
 source = "git+https://github.com/actix/actix-web?tag=web-v4.0.0-beta.6#5a162932f3ce79ad81381eccdab38dd4cef68f0c"
 dependencies = [
  "actix-codec",
@@ -230,8 +286,9 @@ dependencies = [
 name = "animu_actix"
 version = "0.1.0"
 dependencies = [
+ "actix-multipart",
  "actix-service",
- "actix-web",
+ "actix-web 4.0.0-beta.6 (git+https://github.com/actix/actix-web?tag=web-v4.0.0-beta.6)",
  "anitomy",
  "async-std",
  "async-trait",
@@ -247,6 +304,7 @@ dependencies = [
  "hyper",
  "hyper-rustls",
  "libaes",
+ "mime-db",
  "pkce",
  "rand 0.8.3",
  "reqwest",
@@ -1252,6 +1310,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2a60c7ce501c71e03a9c9c0d35b861413ae925bd979cc7a4e30d060069aaac8d"
 
 [[package]]
+name = "mime-db"
+version = "1.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "77301b7481db9bd4979b325b795c101f56710f10d2b55614c1557085b838c9ad"
+dependencies = [
+ "reqwest",
+ "serde",
+ "tokio",
+]
+
+[[package]]
 name = "miniz_oxide"
 version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2192,10 +2261,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "59547bce71d9c38b83d9c0e92b6066c4253371f15005def0c30d9657f50c7642"
 
 [[package]]
+name = "twoway"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c57ffb460d7c24cd6eda43694110189030a3d1dfe418416d9468fd1c1d290b47"
+dependencies = [
+ "memchr",
+ "unchecked-index",
+]
+
+[[package]]
 name = "typenum"
 version = "1.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "879f6906492a7cd215bfa4cf595b600146ccfac0c79bcbd1f3000162af5e8b06"
+
+[[package]]
+name = "unchecked-index"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eeba86d422ce181a719445e51872fa30f1f7413b62becb52e95ec91aa262d85c"
 
 [[package]]
 name = "unicode-bidi"
