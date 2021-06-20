@@ -38,6 +38,7 @@ use std::sync::Arc;
 use crate::models::user::User;
 use crate::routes::admin::create_invite;
 use crate::routes::admin::get_all_invites;
+use crate::routes::images::index;
 use crate::routes::images::upload;
 use crate::routes::user::all_users;
 use crate::routes::user::login;

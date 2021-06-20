@@ -16,7 +16,7 @@ use crate::{
     structs::{Response, State},
 };
 
-pub async fn upload(req: HttpRequest, p: Payload, state: web::Data<State>) -> impl Responder {
+pub async fn upload(mut payload: Multipart, req: HttpRequest, state: web::Data<State>) -> impl Responder {
     let user = User::from_token(
         req.headers()
             .get("authorization")
@@ -29,13 +29,13 @@ pub async fn upload(req: HttpRequest, p: Payload, state: web::Data<State>) -> im
     )
     .unwrap();
 
-    let mut payload = match Multipart::boundary(req.headers()) {
-        Ok(boundary) => Multipart::from_boundary(boundary, p.into_stream()),
+    // let mut payload = match Multipart::boundary(req.headers()) {
+    //     Ok(boundary) => Multipart::from_boundary(boundary, p.into_stream()),
 
-        Err(_) => {
-            return HttpResponse::InternalServerError().finish();
-        }
-    };
+    //     Err(_) => {
+    //         return HttpResponse::InternalServerError().finish();
+    //     }
+    // };
     while let Ok(Some(mut field)) = payload.try_next().await {
         let extension = extension(
             field

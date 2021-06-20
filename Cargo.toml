@@ -6,7 +6,7 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-actix-web = { git = "https://github.com/actix/actix-web", tag = "web-v4.0.0-beta.6" }
+actix-web = "4.0.0-beta.7"
 reqwest = { version = "0.11", features = ["json", "stream"] }
 serde = { version = "1", features = ["derive"] }
 diesel = { version = "1.4.4", features = ["postgres", "r2d2"] }
@@ -30,5 +30,5 @@ actix-service = "2.0.0"
 rand = "0.8"
 async-std = "1"
 cookie = "0.15.0"
-actix-multipart = { git = "https://github.com/veselysps/actix-web", branch = "master" }
+actix-multipart = "0.4.0-beta.4"
 mime-db = "1.4.0"
