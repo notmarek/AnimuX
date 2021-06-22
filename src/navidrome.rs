@@ -55,16 +55,16 @@ impl Navidrome {
             )
         }
         Ok(Self {
-            url: url,
-            client: client,
-            login: login,
+            url,
+            client,
+            login,
         })
     }
 
     pub async fn create_account(self, username: String, password: String) {
         let data: NavidromeRegisterPayload = NavidromeRegisterPayload {
             username: username.clone(),
-            password: password,
+            password,
             name: username,
             is_admin: false,
         };
@@ -79,6 +79,5 @@ impl Navidrome {
             .text()
             .await
             .unwrap();
-        ()
     }
 }

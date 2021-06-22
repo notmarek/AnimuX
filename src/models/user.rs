@@ -48,7 +48,7 @@ impl User {
         let data = serde_json::to_string(&self).unwrap();
         let key: &[u8; 16] = &secret.as_bytes()[..16].try_into().unwrap();
         let cipher = Cipher::new_128(key);
-        let encrypted = cipher.cbc_encrypt(b"0000000000000000", &data.as_bytes()[..]);
+        let encrypted = cipher.cbc_encrypt(b"0000000000000000",data.as_bytes());
         encode(encrypted)
     }
     pub fn from_token(
@@ -60,12 +60,12 @@ impl User {
         let db = db.get().unwrap();
         let key: &[u8; 16] = &secret.as_bytes()[..16].try_into().unwrap();
         let cipher = Cipher::new_128(key);
-        let decoded = &decode(token).unwrap_or(vec![]);
-        if decoded.len() == 0 {
+        let decoded = decode(token).unwrap_or_default();
+        if decoded.is_empty() {
             return Err(String::from("Encrypted string seems fucked."));
         }
         let decrypted: Vec<u8> = cipher.cbc_decrypt(b"0000000000000000", &decoded[..]);
-        let data = String::from_utf8(decrypted).unwrap_or(String::new());
+        let data = String::from_utf8(decrypted).unwrap_or_default();
         let data: User = serde_json::from_str(&data).unwrap_or(User {
             id: 0,
             username: String::new(),

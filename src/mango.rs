@@ -32,11 +32,7 @@ impl Mango {
         let header_value = resp.headers().get("set-cookie").unwrap();
         let mut jar = CookieJar::new();
         jar.add(Cookie::parse(String::from(header_value.to_str().unwrap())).unwrap());
-        Ok(Self {
-            url: url,
-            jar: jar,
-            client: client,
-        })
+        Ok(Self { url, jar, client })
     }
 
     pub async fn create_account(self, username: String, password: String) {
@@ -58,6 +54,5 @@ impl Mango {
             .send()
             .await
             .unwrap();
-        ()
     }
 }

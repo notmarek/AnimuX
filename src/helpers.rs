@@ -6,7 +6,7 @@ use crate::googledrive::{Drive, GoogleDrive};
 pub fn parse_files(files: Vec<File>) -> Vec<ParsedFile> {
     files
         .into_iter()
-        .map(|file| ParsedFile::from_file(file))
+        .map(ParsedFile::from_file)
         .collect()
 }
 

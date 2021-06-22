@@ -38,7 +38,6 @@ use std::sync::Arc;
 use crate::models::user::User;
 use crate::routes::admin::create_invite;
 use crate::routes::admin::get_all_invites;
-use crate::routes::images::index;
 use crate::routes::images::upload;
 use crate::routes::user::all_users;
 use crate::routes::user::login;
@@ -57,7 +56,7 @@ async fn main() -> std::io::Result<()> {
         hcaptcha_enabled: false,
         hcaptcha_secret: None,
         hcaptcha_sitekey: None,
-        secret: env::var("SECRET").unwrap_or(String::from("weaksecret")),
+        secret: env::var("SECRET").unwrap_or_else(|_| String::from("weaksecret")),
         database: db,
         mango_enabled: false,
         mango: None,
@@ -65,14 +64,14 @@ async fn main() -> std::io::Result<()> {
         navidrome: None,
         default_upload_path: None,
     };
-    let address: String = env::var("ADDRESS").unwrap_or(String::from("127.0.0.1"));
-    let port: String = env::var("PORT").unwrap_or(String::from("8080"));
-    let hcaptcha_enabled: String = env::var("HCAPTCHA_ENABLED").unwrap_or(String::new());
-    let drive_enabled: String = env::var("ENABLE_GDRIVE").unwrap_or(String::new());
-    let mal_enabled: String = env::var("ENABLE_MAL").unwrap_or(String::new());
-    let navidrome_enabled: String = env::var("ENABLE_NAVIDROME").unwrap_or(String::new());
-    let mango_enabled: String = env::var("ENABLE_MANGO").unwrap_or(String::new());
-    let image_upload_enabled: String = env::var("ENABLE_UPLOADER").unwrap_or(String::new());
+    let address: String = env::var("ADDRESS").unwrap_or_else(|_| String::from("127.0.0.1"));
+    let port: String = env::var("PORT").unwrap_or_else(|_| String::from("8080"));
+    let hcaptcha_enabled: String = env::var("HCAPTCHA_ENABLED").unwrap_or_else(|_| "/".to_string());
+    let drive_enabled: String = env::var("ENABLE_GDRIVE").unwrap_or_else(|_| "/".to_string());
+    let mal_enabled: String = env::var("ENABLE_MAL").unwrap_or_else(|_| "/".to_string());
+    let navidrome_enabled: String = env::var("ENABLE_NAVIDROME").unwrap_or_else(|_| "/".to_string());
+    let mango_enabled: String = env::var("ENABLE_MANGO").unwrap_or_else(|_| "/".to_string());
+    let image_upload_enabled: String = env::var("ENABLE_UPLOADER").unwrap_or_else(|_| "/".to_string());
 
     if navidrome_enabled.to_lowercase() == "true" || navidrome_enabled.to_lowercase() == "yes" {
         println!("Navidrome enabled.");
@@ -140,7 +139,7 @@ async fn main() -> std::io::Result<()> {
         state.mal_secret = Some(mal_secret);
     }
 
-    let base_path: String = env::var("BASE_PATH").unwrap_or("/".to_string());
+    let base_path: String = env::var("BASE_PATH").unwrap_or_else(|_| "/".to_string());
     state.base_path = base_path.clone();
     HttpServer::new(move || {
         let st = state.clone();
@@ -152,8 +151,8 @@ async fn main() -> std::io::Result<()> {
                 res = Some(r);
             } else if !&req.path().contains(&format!("{}user", st.base_path))
                 && (!&req.headers().contains_key("authorization")
-                    || &req.headers().get("authorization").unwrap().len() < &5
-                    || match User::from_token(
+                    || req.headers().get("authorization").unwrap().len() < 5
+                    || User::from_token(
                         String::from(
                             req.headers()
                                 .get("authorization")
@@ -163,10 +162,7 @@ async fn main() -> std::io::Result<()> {
                         ),
                         st.secret.clone(),
                         &st.database,
-                    ) {
-                        Ok(_) => false,
-                        Err(_) => true,
-                    })
+                    ).is_err())
             {
                 let r = ServiceResponse::new(
                     req.into_parts().0,
@@ -186,12 +182,10 @@ async fn main() -> std::io::Result<()> {
             }
 
             async {
-                let mut r;
-                if res.is_none() {
-                    r = fut.unwrap().await.unwrap();
-                } else {
-                    r = res.unwrap();
-                }
+                let mut r = match res {
+                    Some(r) => r,
+                    None => fut.unwrap().await.unwrap(),
+                };
                 let headers = r.headers_mut();
                 headers.insert(
                     HeaderName::from_str("Access-Control-Allow-Origin").unwrap(),
@@ -262,7 +256,7 @@ async fn main() -> std::io::Result<()> {
                 &format!("{}admin/invites", &base_path),
                 web::get().to(get_all_invites),
             )
-            .route(&format!("{}", &base_path), web::get().to(files)) // Default route
+            .route(&base_path.to_string(), web::get().to(files)) // Default route
             .route(&format!("{}{{tail:.*}}", &base_path), web::get().to(files)) // Default route
             .data(state.clone());
         app

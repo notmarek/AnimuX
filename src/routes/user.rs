@@ -73,17 +73,15 @@ pub async fn register(data: web::Json<JsonUserAuth>, state: web::Data<State>) ->
                     .create_account(data.username.clone(), data.password.clone())
                     .await;
             }
-            return HttpResponse::Ok().json(Response {
+            HttpResponse::Ok().json(Response {
                 status: String::from("success"),
                 data: u,
-            });
+            })
         }
-        Err(e) => {
-            return HttpResponse::Ok().json(Response {
-                status: String::from("error"),
-                data: e,
-            });
-        }
+        Err(e) => HttpResponse::Ok().json(Response {
+            status: String::from("error"),
+            data: e,
+        }),
     }
 }
 
@@ -95,18 +93,14 @@ pub async fn login(data: web::Json<JsonUserAuth>, state: web::Data<State>) -> im
         &state.database,
     );
     match user {
-        Ok(u) => {
-            return HttpResponse::Ok().json(Response {
-                status: String::from("success"),
-                data: u,
-            });
-        }
-        Err(e) => {
-            return HttpResponse::Ok().json(Response {
-                status: String::from("error"),
-                data: e,
-            });
-        }
+        Ok(u) => HttpResponse::Ok().json(Response {
+            status: String::from("success"),
+            data: u,
+        }),
+        Err(e) => HttpResponse::Ok().json(Response {
+            status: String::from("error"),
+            data: e,
+        }),
     }
 }
 

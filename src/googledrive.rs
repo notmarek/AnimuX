@@ -10,7 +10,6 @@ use async_trait::async_trait;
 
 use drive3::DriveHub;
 
-use yup_oauth2;
 use yup_oauth2::{read_application_secret, InstalledFlowAuthenticator, InstalledFlowReturnMethod};
 
 use crate::structs::{AnimeInfo, ParsedFile, ANIME};
@@ -160,9 +159,9 @@ impl GoogleDrive for Drive {
                         ),
                         size: Some(
                             file.size
-                                .unwrap_or(String::new())
+                                .unwrap_or_default()
                                 .parse::<u64>()
-                                .unwrap_or(0 as u64),
+                                .unwrap_or(0_u64),
                         ),
                         mal_id: mal.get(0).map_or(Some(0), |mal| mal.mal),
                     }
