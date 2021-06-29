@@ -6,7 +6,7 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-actix-web = "4.0.0-beta.7"
+actix-web = "4.0.0-beta.8"
 reqwest = { version = "0.11", features = ["json", "stream"] }
 serde = { version = "1", features = ["derive"] }
 diesel = { version = "1.4.4", features = ["postgres", "r2d2"] }
@@ -30,5 +30,6 @@ actix-service = "2.0.0"
 rand = "0.8"
 async-std = "1"
 cookie = "0.15.0"
-actix-multipart = "0.4.0-beta.4"
+actix-multipart = "0.4.0-beta.5"
+actix-files = "0.6.0-beta.6"
 mime-db = "1.4.0"

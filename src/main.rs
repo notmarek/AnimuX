@@ -13,6 +13,8 @@ mod routes;
 mod schema;
 mod structs;
 
+use actix_files::Files;
+use actix_web::dev::ServiceRequest;
 use actix_web::dev::ServiceResponse;
 use actix_web::HttpResponse;
 
@@ -66,12 +68,15 @@ async fn main() -> std::io::Result<()> {
     };
     let address: String = env::var("ADDRESS").unwrap_or_else(|_| String::from("127.0.0.1"));
     let port: String = env::var("PORT").unwrap_or_else(|_| String::from("8080"));
+    let file_location: String = env::var("FILES").unwrap_or_default();
     let hcaptcha_enabled: String = env::var("HCAPTCHA_ENABLED").unwrap_or_else(|_| "/".to_string());
     let drive_enabled: String = env::var("ENABLE_GDRIVE").unwrap_or_else(|_| "/".to_string());
     let mal_enabled: String = env::var("ENABLE_MAL").unwrap_or_else(|_| "/".to_string());
-    let navidrome_enabled: String = env::var("ENABLE_NAVIDROME").unwrap_or_else(|_| "/".to_string());
+    let navidrome_enabled: String =
+        env::var("ENABLE_NAVIDROME").unwrap_or_else(|_| "/".to_string());
     let mango_enabled: String = env::var("ENABLE_MANGO").unwrap_or_else(|_| "/".to_string());
-    let image_upload_enabled: String = env::var("ENABLE_UPLOADER").unwrap_or_else(|_| "/".to_string());
+    let image_upload_enabled: String =
+        env::var("ENABLE_UPLOADER").unwrap_or_else(|_| "/".to_string());
 
     if navidrome_enabled.to_lowercase() == "true" || navidrome_enabled.to_lowercase() == "yes" {
         println!("Navidrome enabled.");
@@ -143,29 +148,14 @@ async fn main() -> std::io::Result<()> {
     state.base_path = base_path.clone();
     HttpServer::new(move || {
         let st = state.clone();
-        let mut app = App::new().wrap_fn(move |req, srv| {
-            let mut res = None;
-            let mut fut = None;
-            if req.method() == http::Method::OPTIONS {
-                let r = ServiceResponse::new(req.into_parts().0, HttpResponse::Ok().finish());
-                res = Some(r);
-            } else if !&req.path().contains(&format!("{}user", st.base_path))
-                && (!&req.headers().contains_key("authorization")
-                    || req.headers().get("authorization").unwrap().len() < 5
-                    || User::from_token(
-                        String::from(
-                            req.headers()
-                                .get("authorization")
-                                .unwrap()
-                                .to_str()
-                                .unwrap(),
-                        ),
-                        st.secret.clone(),
-                        &st.database,
-                    ).is_err())
-            {
+        let mut app = App::new()
+            .wrap_fn(move |req, srv| {
+                let mut original = None;
+                let mut response = None;
+                let parts = req.into_parts();
+                let req = ServiceRequest::from_parts(parts.0.clone(), parts.1);
                 let r = ServiceResponse::new(
-                    req.into_parts().0,
+                    parts.0,
                     HttpResponse::Forbidden()
                         .content_type("application/json")
                         .body(
@@ -176,28 +166,62 @@ async fn main() -> std::io::Result<()> {
                             .json(),
                         ),
                 );
-                res = Some(r);
-            } else {
-                fut = Some(srv.call(req));
-            }
+                let access_denied = Some(r);
+                if req.method() == http::Method::OPTIONS {
+                    response = Some(ServiceResponse::new(
+                        req.into_parts().0,
+                        HttpResponse::Ok().finish(),
+                    ));
+                } else if req.path().contains(&format!("{}user", st.base_path)) {
+                    original = Some(srv.call(req));
+                } else if req.path().contains("1qweww45") {
+                    if let Ok(user) = User::from_token(
+                        req.query_string().replace("t=", ""),
+                        st.secret.clone(),
+                        &st.database,
+                    ) {
+                        println!("{} accessed {}", user.username, req.path());
+                        original = Some(srv.call(req));
+                    }
+                } else if req.headers().contains_key("authorization") {
+                    if let Ok(user) = User::from_token(
+                        String::from(
+                            req.headers()
+                                .get("authorization")
+                                .unwrap()
+                                .to_str()
+                                .unwrap(),
+                        ),
+                        st.secret.clone(),
+                        &st.database,
+                    ) {
+                        println!("{} accessed {}", user.username, req.path());
+                        original = Some(srv.call(req));
+                    }
+                }
 
-            async {
-                let mut r = match res {
-                    Some(r) => r,
-                    None => fut.unwrap().await.unwrap(),
-                };
-                let headers = r.headers_mut();
-                headers.insert(
-                    HeaderName::from_str("Access-Control-Allow-Origin").unwrap(),
-                    HeaderValue::from_static("*"),
-                );
-                headers.insert(
-                    HeaderName::from_str("Access-Control-Allow-Headers").unwrap(),
-                    HeaderValue::from_static("Content-Type, Authorization"),
-                );
-                Ok(r)
-            }
-        });
+                async {
+                    let mut r = match response {
+                        Some(r) => r,
+                        None => match original {
+                            Some(r) => r.await.unwrap(),
+                            None => access_denied.unwrap(),
+                        },
+                    };
+                    println!("{:#?}", r);
+                    let headers = r.headers_mut();
+                    headers.insert(
+                        HeaderName::from_str("Access-Control-Allow-Origin").unwrap(),
+                        HeaderValue::from_static("*"),
+                    );
+                    headers.insert(
+                        HeaderName::from_str("Access-Control-Allow-Headers").unwrap(),
+                        HeaderValue::from_static("Content-Type, Authorization"),
+                    );
+                    Ok(r)
+                }
+            })
+            .service(Files::new("/1qweww45", file_location.clone()));
         if drive_enabled.to_lowercase() == "true" || drive_enabled.to_lowercase() == "yes" {
             app = app
                 .route(&format!("{}GoogleDrive", &base_path), web::get().to(gdrive))
@@ -258,7 +282,7 @@ async fn main() -> std::io::Result<()> {
             )
             .route(&base_path.to_string(), web::get().to(files)) // Default route
             .route(&format!("{}{{tail:.*}}", &base_path), web::get().to(files)) // Default route
-            .data(state.clone());
+            .app_data(state.clone());
         app
     })
     .bind((address, port.parse::<u16>().unwrap()))?
