@@ -19,6 +19,7 @@ use actix_web::dev::ServiceResponse;
 use actix_web::HttpResponse;
 
 use actix_web::http::HeaderName;
+use actix_web::web::Data;
 use http::HeaderValue;
 use mango::Mango;
 use navidrome::Navidrome;
@@ -29,6 +30,7 @@ use routes::mal;
 use structs::*;
 
 use std::env;
+use std::rc::Rc;
 use std::str::FromStr;
 
 use actix_service::Service;
@@ -150,30 +152,13 @@ async fn main() -> std::io::Result<()> {
         let st = state.clone();
         let mut app = App::new()
             .wrap_fn(move |req, srv| {
-                let mut original = None;
+                let mut original = false;
                 let mut response = None;
-                let parts = req.into_parts();
-                let req = ServiceRequest::from_parts(parts.0.clone(), parts.1);
-                let r = ServiceResponse::new(
-                    parts.0,
-                    HttpResponse::Forbidden()
-                        .content_type("application/json")
-                        .body(
-                            Response {
-                                status: String::from("error"),
-                                data: String::from("Access denied."),
-                            }
-                            .json(),
-                        ),
-                );
-                let access_denied = Some(r);
+                let mut fut = None;
                 if req.method() == http::Method::OPTIONS {
-                    response = Some(ServiceResponse::new(
-                        req.into_parts().0,
-                        HttpResponse::Ok().finish(),
-                    ));
+                    original = false;
                 } else if req.path().contains(&format!("{}user", st.base_path)) {
-                    original = Some(srv.call(req));
+                    original = true;
                 } else if req.path().contains("1qweww45") {
                     if let Ok(user) = User::from_token(
                         req.query_string().replace("t=", ""),
@@ -181,7 +166,7 @@ async fn main() -> std::io::Result<()> {
                         &st.database,
                     ) {
                         println!("{} accessed {}", user.username, req.path());
-                        original = Some(srv.call(req));
+                        original = true;
                     }
                 } else if req.headers().contains_key("authorization") {
                     if let Ok(user) = User::from_token(
@@ -196,19 +181,30 @@ async fn main() -> std::io::Result<()> {
                         &st.database,
                     ) {
                         println!("{} accessed {}", user.username, req.path());
-                        original = Some(srv.call(req));
+                        original = true;
                     }
                 }
-
-                async {
-                    let mut r = match response {
-                        Some(r) => r,
-                        None => match original {
-                            Some(r) => r.await.unwrap(),
-                            None => access_denied.unwrap(),
-                        },
+                if !original {
+                    response = Some(req.into_response(
+                    HttpResponse::Forbidden()
+                        .content_type("application/json")
+                        .body(
+                            Response {
+                                status: String::from("error"),
+                                data: String::from("Access denied."),
+                            }
+                            .json(),
+                        ),
+                    ));
+                }
+                else {
+                    fut = Some(srv.call(req));
+                }
+                async move {
+                    let mut r = match original {
+                        true => fut.unwrap().await.unwrap(),
+                        false => response.unwrap(),
                     };
-                    println!("{:#?}", r);
                     let headers = r.headers_mut();
                     headers.insert(
                         HeaderName::from_str("Access-Control-Allow-Origin").unwrap(),
@@ -282,7 +278,7 @@ async fn main() -> std::io::Result<()> {
             )
             .route(&base_path.to_string(), web::get().to(files)) // Default route
             .route(&format!("{}{{tail:.*}}", &base_path), web::get().to(files)) // Default route
-            .app_data(state.clone());
+            .app_data(Data::new(state.clone()));
         app
     })
     .bind((address, port.parse::<u16>().unwrap()))?
