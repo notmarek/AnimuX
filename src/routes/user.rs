@@ -1,10 +1,18 @@
 use std::collections::HashMap;
 
-use actix_web::{web, HttpResponse, Responder};
+use actix_web::{web, HttpResponse, Responder, HttpRequest, http::StatusCode};
 
 use crate::models::user::{JsonUserAuth, Roles, User};
 use crate::structs::{HCaptchaResponse, Response, State};
 use reqwest;
+
+pub async fn check_token(req: HttpRequest, state: web::Data<State>) -> impl Responder {
+    if User::from_token(req.query_string().replace("token=", ""), state.secret.clone(), &state.database).is_err() {
+        HttpResponse::new(StatusCode::NOT_FOUND)
+    } else {
+        HttpResponse::new(StatusCode::OK)
+    }
+}
 
 pub async fn register(data: web::Json<JsonUserAuth>, state: web::Data<State>) -> impl Responder {
     if state.hcaptcha_enabled {

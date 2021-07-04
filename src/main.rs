@@ -14,8 +14,6 @@ mod schema;
 mod structs;
 
 use actix_files::Files;
-use actix_web::dev::ServiceRequest;
-use actix_web::dev::ServiceResponse;
 use actix_web::HttpResponse;
 
 use actix_web::http::HeaderName;
@@ -30,7 +28,6 @@ use routes::mal;
 use structs::*;
 
 use std::env;
-use std::rc::Rc;
 use std::str::FromStr;
 
 use actix_service::Service;
@@ -46,6 +43,7 @@ use crate::routes::images::upload;
 use crate::routes::user::all_users;
 use crate::routes::user::login;
 use crate::routes::user::register;
+use crate::routes::user::check_token;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -262,6 +260,10 @@ async fn main() -> std::io::Result<()> {
             .route(
                 &format!("{}user/register", &base_path),
                 web::post().to(register),
+            )
+            .route(
+                &format!("{}user/check_token", &base_path),
+                web::post().to(check_token),
             )
             .route(&format!("{}user/login", &base_path), web::post().to(login))
             .route(
