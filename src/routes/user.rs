@@ -42,6 +42,7 @@ pub async fn register(data: web::Json<JsonUserAuth>, state: web::Data<State>) ->
             .await
             .unwrap();
         if !resp.success {
+            println!("Someone has failed the captcha.");
             return HttpResponse::Ok().json(Response {
                 status: String::from("error"),
                 data: "Can't you even do the captcha man?",
@@ -49,6 +50,7 @@ pub async fn register(data: web::Json<JsonUserAuth>, state: web::Data<State>) ->
         }
     }
     if data.invite.is_none() || data.invite.as_ref().unwrap().len() < 8 {
+        println!("Someone has used an invalid invite - \"{}\"", data.invite.as_ref().unwrap());
         return HttpResponse::Ok().json(Response {
             status: String::from("error"),
             data: "You need to specify a valid invite.",
@@ -65,6 +67,7 @@ pub async fn register(data: web::Json<JsonUserAuth>, state: web::Data<State>) ->
 
     match user {
         Ok(u) => {
+            println!("New user has been registered - \"{}\"", &data.username);
             if state.navidrome_enabled {
                 state
                     .navidrome

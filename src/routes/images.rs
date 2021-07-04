@@ -30,13 +30,6 @@ pub async fn upload(
     )
     .unwrap();
 
-    // let mut payload = match Multipart::boundary(req.headers()) {
-    //     Ok(boundary) => Multipart::from_boundary(boundary, p.into_stream()),
-
-    //     Err(_) => {
-    //         return HttpResponse::InternalServerError().finish();
-    //     }
-    // };
     let mut field = payload.try_next().await.unwrap().unwrap();
 
     let extension = extension(
@@ -54,6 +47,7 @@ pub async fn upload(
         state.default_upload_path.as_ref().unwrap(),
         &user.username
     );
+    println!("{} uploaded a file.", &user.username);
     create_dir_all(&user_folder).await.unwrap();
     let filename: String = rand::thread_rng()
         .sample_iter(&Alphanumeric)
