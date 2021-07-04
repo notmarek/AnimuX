@@ -153,6 +153,7 @@ async fn main() -> std::io::Result<()> {
                 let mut original = false;
                 let mut response = None;
                 let mut fut = None;
+                println!("{:#?}", req);
                 if req.method() == http::Method::OPTIONS {
                     original = false;
                 } else if req.path().contains(&format!("{}user", st.base_path)) {

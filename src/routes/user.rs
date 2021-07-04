@@ -5,10 +5,16 @@ use actix_web::{web, HttpResponse, Responder, HttpRequest, http::StatusCode};
 use crate::models::user::{JsonUserAuth, Roles, User};
 use crate::structs::{HCaptchaResponse, Response, State};
 use reqwest;
+use serde::Deserialize;
+ 
+#[derive(Deserialize, Debug)]
+pub struct Token {
+    pub token: String,
+}
 
-pub async fn check_token(req: HttpRequest, state: web::Data<State>) -> impl Responder {
-    if User::from_token(req.query_string().replace("token=", ""), state.secret.clone(), &state.database).is_err() {
-        HttpResponse::new(StatusCode::NOT_FOUND)
+pub async fn check_token(state: web::Data<State>, data: web::Form<Token>) -> impl Responder {
+    if User::from_token(data.token.clone(), state.secret.clone(), &state.database).is_err() {
+        HttpResponse::new(StatusCode::FORBIDDEN)
     } else {
         HttpResponse::new(StatusCode::OK)
     }
