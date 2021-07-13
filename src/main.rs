@@ -65,9 +65,11 @@ async fn main() -> std::io::Result<()> {
         navidrome_enabled: false,
         navidrome: None,
         default_upload_path: None,
+        root_folder: "/home/pi/Y/Animu/".to_string(),
     };
     let address: String = env::var("ADDRESS").unwrap_or_else(|_| String::from("127.0.0.1"));
     let port: String = env::var("PORT").unwrap_or_else(|_| String::from("8080"));
+    state.root_folder = env::var("ROOT_FOLDER").unwrap_or_else(|_| "/home/pi/Y/Animu/".to_string());
     let file_location: String = env::var("FILES").unwrap_or_default();
     let hcaptcha_enabled: String = env::var("HCAPTCHA_ENABLED").unwrap_or_else(|_| "/".to_string());
     let drive_enabled: String = env::var("ENABLE_GDRIVE").unwrap_or_else(|_| "/".to_string());

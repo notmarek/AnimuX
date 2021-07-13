@@ -15,7 +15,7 @@ pub async fn files(req: HttpRequest, data: web::Data<State>) -> impl Responder {
         .parse::<String>()
         .unwrap()
         .replace(&data.base_path, "/");
-    let paths: fs::ReadDir = fs::read_dir(&format!("/home/pi/Y/Animu/{}", path)).unwrap();
+    let paths: fs::ReadDir = fs::read_dir(&format!("{}{}", data.root_folder, path)).unwrap();
     let files = paths
         .into_iter()
         .map(|path| {

@@ -37,6 +37,7 @@ pub struct State {
     pub navidrome_enabled: bool,
     pub navidrome: Option<Navidrome>,
     pub default_upload_path: Option<String>,
+    pub root_folder: String,
 }
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Response<T: Serialize> {
