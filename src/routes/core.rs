@@ -1,75 +1,62 @@
 use actix_web::{web, HttpRequest, HttpResponse, Responder};
 
-use std::fs;
-
-use chrono::{DateTime, Utc};
-
-use crate::helpers::{file_sort, parse_files};
+use crate::helpers::file_sort;
+use crate::index as global_index;
 use crate::structs::{Directory, File, ParsedFile, State, StorageThing};
-
-use super::admin::{flatten_index, index_folder, merge_folders};
-
 
 pub fn directory_index_to_files(index: Directory) -> Vec<ParsedFile> {
     let mut files: Vec<ParsedFile> = Vec::new();
-    index.files.into_iter().for_each(|f| {
-        match f {
-            StorageThing::Directory(dir) => {
-                let file = File {
-                    name: Some(dir.name.clone()),
-                    path: Some(dir.name.clone()),
-                    kind: Some("directory".to_string()),
-                    mtime: dir.mtime,
-                    size: None,
-                };
-                files.push(ParsedFile::from_file(file));
-            },
-            StorageThing::File(file) => {
-                files.push(file);
-            },
-            StorageThing::Empty(_) => {},
+    index.files.into_iter().for_each(|f| match f {
+        StorageThing::Directory(dir) => {
+            let file = File {
+                name: Some(dir.name.clone()),
+                path: Some(dir.name.clone()),
+                kind: Some("directory".to_string()),
+                mtime: dir.mtime,
+                size: None,
+            };
+            files.push(ParsedFile::from_file(file));
         }
+        StorageThing::File(file) => {
+            files.push(file);
+        }
+        StorageThing::Empty(_) => {}
     });
     files
 }
 
 pub fn get_path_from_index(index: Directory, path: String, iteration: u8) -> Directory {
-    
     let mut new_index = index.clone();
-    index.files.into_iter().for_each(|f| {
-        match f {
-            StorageThing::Directory(dir) => {
-                let split_path: Vec<&str> = path.split("/").collect();
-                if split_path[iteration as usize] == dir.name.clone() {
-                    if iteration < split_path.len() as u8 - 1 {
-                        new_index = get_path_from_index(dir, path.clone(), iteration + 1);
-                    } else {
-                        new_index = dir;
-                    }
+    index.files.into_iter().for_each(|f| match f {
+        StorageThing::Directory(dir) => {
+            let split_path: Vec<&str> = path.split("/").collect();
+            if split_path[iteration as usize] == dir.name.clone() {
+                if iteration < split_path.len() as u8 - 1 {
+                    new_index = get_path_from_index(dir, path.clone(), iteration + 1);
+                } else {
+                    new_index = dir;
                 }
-            },
-            _ => {},
+            }
         }
+        _ => {}
     });
     new_index
 }
 
 pub async fn files(req: HttpRequest, state: web::Data<State>) -> impl Responder {
     let path = req
-    .match_info()
-    .get("tail")
-    .unwrap()
-    .parse::<String>()
-    .unwrap()
-    .replace(&state.base_path, "/");
-    let mut index: Directory = index_folder(state.root_folder.clone(), true);
-    index = flatten_index(flatten_index(index));
-    index = merge_folders(index, "Movies");
-    index = get_path_from_index(index.clone(), path, 0);
-    // println!("{:#?}", );
-    let mut parsed_files = directory_index_to_files(index);
-    parsed_files.sort_by(|a, b| file_sort(a, b));
-    HttpResponse::Ok().json(parsed_files)
+        .match_info()
+        .get("tail")
+        .unwrap()
+        .parse::<String>()
+        .unwrap()
+        .replace(&state.base_path, "/");
+    unsafe {
+        let index = get_path_from_index(global_index.clone().unwrap(), path, 0);
+        let mut parsed_files = directory_index_to_files(index);
+        parsed_files.sort_by(|a, b| file_sort(a, b));
+        HttpResponse::Ok().json(parsed_files)
+    }
 }
 
 // pub async fn files(req: HttpRequest, data: web::Data<State>) -> impl Responder {

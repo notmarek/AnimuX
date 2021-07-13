@@ -1,10 +1,10 @@
-use actix_web::{web, HttpRequest, HttpResponse, Responder};
+use actix_web::{web, HttpResponse, Responder};
 
 use std::fs;
 
 use chrono::{DateTime, Utc};
 
-use crate::helpers::{file_sort, parse_files};
+use crate::index as global_index;
 use crate::structs::{Directory, File, ParsedFile, Response, State, StorageThing};
 
 use crate::models::invites::Invite;
@@ -27,7 +27,13 @@ pub async fn get_all_invites(state: web::Data<State>) -> impl Responder {
 
 pub fn index_folder(folder: String, root_folder: bool) -> Directory {
     let paths: fs::ReadDir = fs::read_dir(&folder).unwrap();
-    let folder_name: String = fs::canonicalize(&folder).unwrap().file_name().unwrap().to_str().unwrap().to_string();
+    let folder_name: String = fs::canonicalize(&folder)
+        .unwrap()
+        .file_name()
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .to_string();
     let dir_metadata = fs::metadata(&folder).unwrap();
     let modification_time: DateTime<Utc> = dir_metadata.modified().unwrap().into();
 
@@ -36,11 +42,22 @@ pub fn index_folder(folder: String, root_folder: bool) -> Directory {
         .map(|path| {
             let metadata = path.as_ref().unwrap().metadata().unwrap();
             let modification_time: DateTime<Utc> = metadata.modified().unwrap().into();
-            if !root_folder && !path.as_ref().unwrap().path().to_str().unwrap().to_string().contains("Animu") {
+            if !root_folder
+                && !path
+                    .as_ref()
+                    .unwrap()
+                    .path()
+                    .to_str()
+                    .unwrap()
+                    .to_string()
+                    .contains("Animu")
+            {
                 StorageThing::Empty(String::new())
-            }
-            else if metadata.is_dir() {
-                StorageThing::Directory(index_folder(path.as_ref().unwrap().path().to_str().unwrap().to_string(), false))
+            } else if metadata.is_dir() {
+                StorageThing::Directory(index_folder(
+                    path.as_ref().unwrap().path().to_str().unwrap().to_string(),
+                    false,
+                ))
             } else {
                 let file = File {
                     name: Some(path.as_ref().unwrap().file_name().into_string().unwrap()),
@@ -53,7 +70,6 @@ pub fn index_folder(folder: String, root_folder: bool) -> Directory {
             }
         })
         .collect();
-    
 
     Directory {
         name: folder_name,
@@ -63,19 +79,16 @@ pub fn index_folder(folder: String, root_folder: bool) -> Directory {
     }
 }
 
-
 pub fn flatten_index(index: Directory) -> Directory {
     let mut files: Vec<StorageThing> = Vec::new();
-    index.files.into_iter().for_each(|f| {
-        match f {
-            StorageThing::Directory(mut dir) => {
-                files.append(dir.files.as_mut());
-            },
-            StorageThing::File(file) => {
-                files.push(StorageThing::File(file));
-            },
-            StorageThing::Empty(_) => {},
+    index.files.into_iter().for_each(|f| match f {
+        StorageThing::Directory(mut dir) => {
+            files.append(dir.files.as_mut());
         }
+        StorageThing::File(file) => {
+            files.push(StorageThing::File(file));
+        }
+        StorageThing::Empty(_) => {}
     });
 
     Directory {
@@ -88,20 +101,18 @@ pub fn flatten_index(index: Directory) -> Directory {
 pub fn merge_folders(index: Directory, to_merge: &str) -> Directory {
     let mut files: Vec<StorageThing> = Vec::new();
     let mut merged_folder_files: Vec<StorageThing> = Vec::new();
-    index.files.into_iter().for_each(|f| {
-        match f {
-            StorageThing::Directory(mut dir) => {
-                if dir.name.ends_with(to_merge){
-                    merged_folder_files.append(dir.files.as_mut());
-                } else {
-                    files.push(StorageThing::Directory(dir));
-                }
-            },
-            StorageThing::File(file) => {
-                files.push(StorageThing::File(file));
-            },
-            StorageThing::Empty(_) => {},
+    index.files.into_iter().for_each(|f| match f {
+        StorageThing::Directory(mut dir) => {
+            if dir.name.ends_with(to_merge) {
+                merged_folder_files.append(dir.files.as_mut());
+            } else {
+                files.push(StorageThing::Directory(dir));
+            }
         }
+        StorageThing::File(file) => {
+            files.push(StorageThing::File(file));
+        }
+        StorageThing::Empty(_) => {}
     });
     let merged_folder = Directory {
         name: to_merge.to_string(),
@@ -117,13 +128,14 @@ pub fn merge_folders(index: Directory, to_merge: &str) -> Directory {
 }
 
 pub async fn index_files(state: web::Data<State>) -> impl Responder {
-
-    let mut index: Directory = index_folder(state.root_folder.clone(), true);
-    index = flatten_index(flatten_index(index));
-    index = merge_folders(index, "Movies");
+    unsafe {
+        let mut i: Directory = index_folder(state.root_folder.clone(), true);
+        i = flatten_index(flatten_index(i));
+        global_index = Some(merge_folders(i, "Movies"));
+    }
 
     HttpResponse::Ok().json(Response {
         status: String::from("success"),
-        data: index,
+        data: "Reindexed all files.",
     })
 }

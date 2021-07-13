@@ -14,13 +14,13 @@ mod schema;
 mod structs;
 
 use actix_files::Files;
-use actix_web::HttpResponse;
 
-use actix_web::http::HeaderName;
 use actix_web::web::Data;
-use http::HeaderValue;
 use mango::Mango;
 use navidrome::Navidrome;
+use routes::admin::flatten_index;
+use routes::admin::index_folder;
+use routes::admin::merge_folders;
 use routes::core::*;
 use routes::gdrive::gdrive;
 use routes::mal;
@@ -28,15 +28,11 @@ use routes::mal;
 use structs::*;
 
 use std::env;
-use std::str::FromStr;
-
-use actix_service::Service;
 use actix_web::{web, App, HttpServer};
 use googledrive::{Drive, GoogleDrive};
 
 use std::sync::Arc;
 
-use crate::models::user::User;
 use crate::routes::admin::create_invite;
 use crate::routes::admin::get_all_invites;
 use crate::routes::admin::index_files;
@@ -45,6 +41,8 @@ use crate::routes::user::all_users;
 use crate::routes::user::login;
 use crate::routes::user::register;
 use crate::routes::user::check_token;
+
+static mut index: Option<Directory> = None;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -149,6 +147,11 @@ async fn main() -> std::io::Result<()> {
 
     let base_path: String = env::var("BASE_PATH").unwrap_or_else(|_| "/".to_string());
     state.base_path = base_path.clone();
+    unsafe {
+        let mut i: Directory = index_folder(state.root_folder.clone(), true);
+        i = flatten_index(flatten_index(i));
+        index = Some(merge_folders(i, "Movies"));
+    }
     HttpServer::new(move || {
         let st = state.clone();
         let mut app = App::new()
