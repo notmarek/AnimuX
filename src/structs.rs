@@ -159,7 +159,7 @@ impl ParsedFile {
                         })
                         .collect::<Vec<AnimeInfo>>();
                     parsed_file = ParsedFile {
-                        name: file.name,
+                        name: file.path,
                         anime: Some(e.get(ElementCategory::AnimeTitle).unwrap_or("").to_string()),
                         group: Some(
                             e.get(ElementCategory::ReleaseGroup)
