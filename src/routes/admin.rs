@@ -4,7 +4,7 @@ use std::fs;
 
 use chrono::{DateTime, Utc};
 
-use crate::index as global_index;
+use crate::INDEX;
 use crate::structs::{Directory, File, ParsedFile, Response, State, StorageThing};
 
 use crate::models::invites::Invite;
@@ -93,7 +93,7 @@ pub fn flatten_index(index: Directory) -> Directory {
 
     Directory {
         name: "Animu".to_string(),
-        files: files,
+        files,
         mtime: index.mtime,
     }
 }
@@ -122,7 +122,7 @@ pub fn merge_folders(index: Directory, to_merge: &str) -> Directory {
     files.push(StorageThing::Directory(merged_folder));
     Directory {
         name: "Animu".to_string(),
-        files: files,
+        files,
         mtime: index.mtime,
     }
 }
@@ -131,7 +131,7 @@ pub async fn index_files(state: web::Data<State>) -> impl Responder {
     unsafe {
         let mut i: Directory = index_folder(state.root_folder.clone(), true);
         i = flatten_index(flatten_index(i));
-        global_index = Some(merge_folders(i, "Movies"));
+        INDEX = Some(merge_folders(i, "Movies"));
     }
 
     HttpResponse::Ok().json(Response {

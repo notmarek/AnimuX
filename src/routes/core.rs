@@ -1,8 +1,8 @@
 use actix_web::{web, HttpRequest, HttpResponse, Responder};
 
 use crate::helpers::file_sort;
-use crate::index as global_index;
 use crate::structs::{Directory, File, ParsedFile, State, StorageThing};
+use crate::INDEX;
 
 pub fn directory_index_to_files(index: Directory) -> Vec<ParsedFile> {
     let mut files: Vec<ParsedFile> = Vec::new();
@@ -27,10 +27,10 @@ pub fn directory_index_to_files(index: Directory) -> Vec<ParsedFile> {
 
 pub fn get_path_from_index(index: Directory, path: String, iteration: u8) -> Directory {
     let mut new_index = index.clone();
-    index.files.into_iter().for_each(|f| match f {
-        StorageThing::Directory(dir) => {
-            let split_path: Vec<&str> = path.split("/").collect();
-            if split_path[iteration as usize] == dir.name.clone() {
+    index.files.into_iter().for_each(|f| {
+        if let StorageThing::Directory(dir) = f {
+            let split_path: Vec<&str> = path.split('/').collect();
+            if split_path[iteration as usize] == dir.name {
                 if iteration < split_path.len() as u8 - 1 {
                     new_index = get_path_from_index(dir, path.clone(), iteration + 1);
                 } else {
@@ -38,7 +38,6 @@ pub fn get_path_from_index(index: Directory, path: String, iteration: u8) -> Dir
                 }
             }
         }
-        _ => {}
     });
     new_index
 }
@@ -52,7 +51,7 @@ pub async fn files(req: HttpRequest, state: web::Data<State>) -> impl Responder 
         .unwrap()
         .replace(&state.base_path, "/");
     unsafe {
-        let index = get_path_from_index(global_index.clone().unwrap(), path, 0);
+        let index = get_path_from_index(INDEX.clone().unwrap(), path, 0);
         let mut parsed_files = directory_index_to_files(index);
         parsed_files.sort_by(|a, b| file_sort(a, b));
         HttpResponse::Ok().json(parsed_files)

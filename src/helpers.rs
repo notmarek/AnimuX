@@ -3,12 +3,12 @@ use std::cmp::Ordering;
 use crate::structs::*;
 
 use crate::googledrive::{Drive, GoogleDrive};
-pub fn parse_files(files: Vec<File>) -> Vec<ParsedFile> {
-    files
-        .into_iter()
-        .map(ParsedFile::from_file)
-        .collect()
-}
+// pub fn parse_files(files: Vec<File>) -> Vec<ParsedFile> {
+//     files
+//         .into_iter()
+//         .map(ParsedFile::from_file)
+//         .collect()
+// }
 
 pub async fn parse_google_files(
     files: Vec<google_drive3::api::File>,
