@@ -24,7 +24,6 @@ use navidrome::Navidrome;
 use routes::admin::dynamic_merge;
 use routes::admin::flatten_index;
 use routes::admin::index_folder;
-use routes::admin::merge_folders;
 use routes::core::*;
 use routes::gdrive::gdrive;
 use routes::mal;

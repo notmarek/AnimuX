@@ -127,7 +127,7 @@ pub fn merge_folders(index: Directory, to_merge: &str) -> Directory {
     }
 }
 
-pub fn dynamic_merge(mut index: Directory) -> Directory {
+pub fn dynamic_merge(index: Directory) -> Directory {
     let mut dir_names: Vec<String> = Vec::new();
     let mut to_merge: Vec<String> = Vec::new();
     let mut new_index = index.clone();
