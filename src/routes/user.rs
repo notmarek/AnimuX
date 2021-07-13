@@ -8,15 +8,20 @@ use reqwest;
 use serde::Deserialize;
  
 #[derive(Deserialize, Debug)]
-pub struct Token {
+pub struct AuthThing {
     pub token: String,
+    pub uri: String,
+    pub ip: String,
 }
 
-pub async fn check_token(state: web::Data<State>, data: web::Form<Token>) -> impl Responder {
-    if User::from_token(data.token.clone(), state.secret.clone(), &state.database).is_err() {
-        HttpResponse::new(StatusCode::FORBIDDEN)
-    } else {
+pub async fn check_token(_req: HttpRequest, state: web::Data<State>, data: web::Form<AuthThing>) -> impl Responder {
+    println!("hello {:#?}", data);
+    if let Ok(user) = User::from_token(data.token.clone(), state.secret.clone(), &state.database) {
+        println!("{} accessed {}", user.username, data.uri);
         HttpResponse::new(StatusCode::OK)
+    } else {
+        println!("{} tried using the token \"{}\" to access {}", data.ip, data.token, data.uri);
+        HttpResponse::new(StatusCode::FORBIDDEN)
     }
 }
 
