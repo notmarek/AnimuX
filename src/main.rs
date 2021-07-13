@@ -21,6 +21,7 @@ use actix_web::web::Data;
 use http::HeaderValue;
 use mango::Mango;
 use navidrome::Navidrome;
+use routes::admin::dynamic_merge;
 use routes::admin::flatten_index;
 use routes::admin::index_folder;
 use routes::admin::merge_folders;
@@ -157,7 +158,7 @@ async fn main() -> std::io::Result<()> {
     unsafe {
         let mut i: Directory = index_folder(state.root_folder.clone(), true);
         i = flatten_index(flatten_index(i));
-        INDEX = Some(merge_folders(i, "Movies"));
+        INDEX = Some(dynamic_merge(i));
     }
     HttpServer::new(move || {
         let st = state.clone();

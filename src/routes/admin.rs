@@ -4,8 +4,8 @@ use std::fs;
 
 use chrono::{DateTime, Utc};
 
-use crate::INDEX;
 use crate::structs::{Directory, File, ParsedFile, Response, State, StorageThing};
+use crate::INDEX;
 
 use crate::models::invites::Invite;
 
@@ -127,11 +127,30 @@ pub fn merge_folders(index: Directory, to_merge: &str) -> Directory {
     }
 }
 
+pub fn dynamic_merge(mut index: Directory) -> Directory {
+    let mut dir_names: Vec<String> = Vec::new();
+    let mut to_merge: Vec<String> = Vec::new();
+    let mut new_index = index.clone();
+    for f in index.files {
+        if let StorageThing::Directory(dir) = f {
+            if !dir_names.contains(&dir.name) {
+                dir_names.push(dir.name);
+            } else if !to_merge.contains(&dir.name) {
+                to_merge.push(dir.name);
+            }
+        }
+    }
+    to_merge.into_iter().for_each(|dir_name| {
+        new_index = merge_folders(new_index.clone(), &dir_name);
+    });
+    new_index
+}
+
 pub async fn index_files(state: web::Data<State>) -> impl Responder {
     unsafe {
         let mut i: Directory = index_folder(state.root_folder.clone(), true);
         i = flatten_index(flatten_index(i));
-        INDEX = Some(merge_folders(i, "Movies"));
+        INDEX = Some(dynamic_merge(i));
     }
 
     HttpResponse::Ok().json(Response {
