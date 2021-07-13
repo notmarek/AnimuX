@@ -87,8 +87,22 @@ pub struct File {
     #[serde(rename = "type")]
     pub kind: Option<String>,
     pub name: Option<String>,
+    pub path: Option<String>,
     pub mtime: Option<String>,
     pub size: Option<u64>,
+}
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Directory {
+    pub name: String,
+    pub files: Vec<StorageThing>,
+    pub mtime: Option<String>,    
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub enum StorageThing {
+    File(ParsedFile),
+    Directory(Directory),
+    Empty(String),
 }
 #[derive(Debug, Serialize, Deserialize)]
 pub struct HCaptchaResponse {
@@ -101,7 +115,7 @@ pub struct HCaptchaResponse {
     pub score_reason: Option<Vec<String>>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ParsedFile {
     pub name: Option<String>,
     pub anime: Option<String>,
@@ -124,7 +138,7 @@ impl ParsedFile {
                 || file.name.as_ref().unwrap().contains(".mp4"))
         {
             parsed_file = ParsedFile {
-                name: file.name.clone(),
+                name: file.path,
                 anime: file.name,
                 group: Some(String::new()),
                 episode: Some(String::new()),

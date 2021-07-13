@@ -39,6 +39,7 @@ use std::sync::Arc;
 use crate::models::user::User;
 use crate::routes::admin::create_invite;
 use crate::routes::admin::get_all_invites;
+use crate::routes::admin::index_files;
 use crate::routes::images::upload;
 use crate::routes::user::all_users;
 use crate::routes::user::login;
@@ -151,73 +152,73 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         let st = state.clone();
         let mut app = App::new()
-            .wrap_fn(move |req, srv| {
-                let mut original = false;
-                let mut response = None;
-                let mut fut = None;
-                println!("{:#?}", req);
-                if req.method() == http::Method::OPTIONS {
-                    original = false;
-                } else if req.path().contains(&format!("{}user", st.base_path)) {
-                    original = true;
-                } else if req.path().contains("1qweww45") {
-                    if let Ok(user) = User::from_token(
-                        req.query_string().replace("t=", ""),
-                        st.secret.clone(),
-                        &st.database,
-                    ) {
-                        println!("{} accessed {}", user.username, req.path());
-                        original = true;
-                    }
-                } else if req.headers().contains_key("authorization") {
-                    if let Ok(user) = User::from_token(
-                        String::from(
-                            req.headers()
-                                .get("authorization")
-                                .unwrap()
-                                .to_str()
-                                .unwrap(),
-                        ),
-                        st.secret.clone(),
-                        &st.database,
-                    ) {
-                        println!("{} accessed {}", user.username, req.path());
-                        original = true;
-                    }
-                }
-                if !original {
-                    response = Some(req.into_response(
-                    HttpResponse::Forbidden()
-                        .content_type("application/json")
-                        .body(
-                            Response {
-                                status: String::from("error"),
-                                data: String::from("Access denied."),
-                            }
-                            .json(),
-                        ),
-                    ));
-                }
-                else {
-                    fut = Some(srv.call(req));
-                }
-                async move {
-                    let mut r = match original {
-                        true => fut.unwrap().await.unwrap(),
-                        false => response.unwrap(),
-                    };
-                    let headers = r.headers_mut();
-                    headers.insert(
-                        HeaderName::from_str("Access-Control-Allow-Origin").unwrap(),
-                        HeaderValue::from_static("*"),
-                    );
-                    headers.insert(
-                        HeaderName::from_str("Access-Control-Allow-Headers").unwrap(),
-                        HeaderValue::from_static("Content-Type, Authorization"),
-                    );
-                    Ok(r)
-                }
-            })
+            // .wrap_fn(move |req, srv| {
+            //     let mut original = false;
+            //     let mut response = None;
+            //     let mut fut = None;
+            //     println!("{:#?}", req);
+            //     if req.method() == http::Method::OPTIONS {
+            //         original = false;
+            //     } else if req.path().contains(&format!("{}user", st.base_path)) {
+            //         original = true;
+            //     } else if req.path().contains("1qweww45") {
+            //         if let Ok(user) = User::from_token(
+            //             req.query_string().replace("t=", ""),
+            //             st.secret.clone(),
+            //             &st.database,
+            //         ) {
+            //             println!("{} accessed {}", user.username, req.path());
+            //             original = true;
+            //         }
+            //     } else if req.headers().contains_key("authorization") {
+            //         if let Ok(user) = User::from_token(
+            //             String::from(
+            //                 req.headers()
+            //                     .get("authorization")
+            //                     .unwrap()
+            //                     .to_str()
+            //                     .unwrap(),
+            //             ),
+            //             st.secret.clone(),
+            //             &st.database,
+            //         ) {
+            //             println!("{} accessed {}", user.username, req.path());
+            //             original = true;
+            //         }
+            //     }
+            //     if !original {
+            //         response = Some(req.into_response(
+            //         HttpResponse::Forbidden()
+            //             .content_type("application/json")
+            //             .body(
+            //                 Response {
+            //                     status: String::from("error"),
+            //                     data: String::from("Access denied."),
+            //                 }
+            //                 .json(),
+            //             ),
+            //         ));
+            //     }
+            //     else {
+            //         fut = Some(srv.call(req));
+            //     }
+            //     async move {
+            //         let mut r = match original {
+            //             true => fut.unwrap().await.unwrap(),
+            //             false => response.unwrap(),
+            //         };
+            //         let headers = r.headers_mut();
+            //         headers.insert(
+            //             HeaderName::from_str("Access-Control-Allow-Origin").unwrap(),
+            //             HeaderValue::from_static("*"),
+            //         );
+            //         headers.insert(
+            //             HeaderName::from_str("Access-Control-Allow-Headers").unwrap(),
+            //             HeaderValue::from_static("Content-Type, Authorization"),
+            //         );
+            //         Ok(r)
+            //     }
+            // })
             .service(Files::new("/1qweww45", file_location.clone()));
         if drive_enabled.to_lowercase() == "true" || drive_enabled.to_lowercase() == "yes" {
             app = app
@@ -272,6 +273,10 @@ async fn main() -> std::io::Result<()> {
             .route(
                 &format!("{}admin/all_users", &base_path),
                 web::get().to(all_users),
+            )
+            .route(
+                &format!("{}admin/reindex", &base_path),
+                web::get().to(index_files),
             )
             .route(
                 &format!("{}admin/create_invite", &base_path),
