@@ -97,9 +97,9 @@ async fn main() -> std::io::Result<()> {
         println!("Torrent requests enabled.");
         state.trans_username =
             Some(env::var("TRANSMISSION_USERNAME").expect("TRANSMISSION_USERNAME not found."));
-        state.trans_username =
+        state.trans_password =
             Some(env::var("TRANSMISSION_PASSWORD").expect("TRANSMISSION_PASSWORD not found."));
-        state.trans_username =
+        state.trans_address =
             Some(env::var("TRANSMISSION_ADDRESS").expect("TRANSMISSION_ADDRESS not found."));
     }
 
