@@ -11,23 +11,37 @@ pub struct Torrent {
     pub id: i32,
     pub link: String,
     pub completed: bool,
+    pub requested_by: i32,
 }
 
-#[derive(Insertable)]
+#[derive(Insertable, Deserialize)]
 #[table_name = "torrent_queue"]
 pub struct NewTorrent {
     pub link: String,
+    pub requested_by: i32,
+}
+
+impl NewTorrent {
+    pub fn insert(self, db: &r2d2::Pool<r2d2::ConnectionManager<PgConnection>>) -> Torrent {
+        use crate::schema::torrent_queue::dsl::*;
+        let db = &db.get().unwrap();
+        diesel::insert_into(torrent_queue)
+            .values(self)
+            .get_result::<Torrent>(db)
+            .unwrap()
+    }
 }
 
 impl Torrent {
     pub fn new(
         torrent_link: String,
+        requester: i32,
         db: &r2d2::Pool<r2d2::ConnectionManager<PgConnection>>,
     ) -> Self {
         use crate::schema::torrent_queue::dsl::*;
         let db = &db.get().unwrap();
         diesel::insert_into(torrent_queue)
-            .values(NewTorrent { link: torrent_link })
+            .values(NewTorrent { link: torrent_link, requested_by: requester })
             .get_result::<Self>(db)
             .unwrap()
     }

@@ -38,6 +38,9 @@ pub struct State {
     pub navidrome: Option<Navidrome>,
     pub default_upload_path: Option<String>,
     pub root_folder: String,
+    pub trans_username: Option<String>,
+    pub trans_password: Option<String>,
+    pub trans_address: Option<String>,
 }
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Response<T: Serialize> {
@@ -95,7 +98,7 @@ pub struct File {
 pub struct Directory {
     pub name: String,
     pub files: Vec<StorageThing>,
-    pub mtime: Option<String>,    
+    pub mtime: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

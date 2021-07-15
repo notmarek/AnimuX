@@ -43,12 +43,19 @@ use crate::routes::admin::create_invite;
 use crate::routes::admin::get_all_invites;
 use crate::routes::admin::index_files;
 use crate::routes::images::upload;
+use crate::routes::requests::approve_request;
+use crate::routes::requests::request_torrent;
+use crate::routes::requests::show_all_requests;
 use crate::routes::user::all_users;
 use crate::routes::user::check_token;
 use crate::routes::user::login;
 use crate::routes::user::register;
 
 static mut INDEX: Option<Directory> = None;
+
+fn is_enabled(name: &String) -> bool {
+    !name.is_empty() && (name.to_lowercase() == "true" || name.to_lowercase() == "yes")
+}
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -71,20 +78,32 @@ async fn main() -> std::io::Result<()> {
         navidrome: None,
         default_upload_path: None,
         root_folder: "/home/pi/Y/Animu/".to_string(),
+        trans_address: None,
+        trans_password: None,
+        trans_username: None,
     };
     let address: String = env::var("ADDRESS").unwrap_or_else(|_| String::from("127.0.0.1"));
     let port: String = env::var("PORT").unwrap_or_else(|_| String::from("8080"));
     state.root_folder = env::var("ROOT_FOLDER").unwrap_or_else(|_| "/home/pi/Y/Animu/".to_string());
-    let hcaptcha_enabled: String = env::var("HCAPTCHA_ENABLED").unwrap_or_else(|_| "/".to_string());
-    let drive_enabled: String = env::var("ENABLE_GDRIVE").unwrap_or_else(|_| "/".to_string());
-    let mal_enabled: String = env::var("ENABLE_MAL").unwrap_or_else(|_| "/".to_string());
-    let navidrome_enabled: String =
-        env::var("ENABLE_NAVIDROME").unwrap_or_else(|_| "/".to_string());
-    let mango_enabled: String = env::var("ENABLE_MANGO").unwrap_or_else(|_| "/".to_string());
-    let image_upload_enabled: String =
-        env::var("ENABLE_UPLOADER").unwrap_or_else(|_| "/".to_string());
+    let hcaptcha_enabled: String = env::var("HCAPTCHA_ENABLED").unwrap_or_default();
+    let drive_enabled: String = env::var("ENABLE_GDRIVE").unwrap_or_default();
+    let mal_enabled: String = env::var("ENABLE_MAL").unwrap_or_default();
+    let torrents_enabled: String = env::var("ENABLE_TORRENTS").unwrap_or_default();
+    let navidrome_enabled: String = env::var("ENABLE_NAVIDROME").unwrap_or_default();
+    let mango_enabled: String = env::var("ENABLE_MANGO").unwrap_or_default();
+    let image_upload_enabled: String = env::var("ENABLE_UPLOADER").unwrap_or_default();
 
-    if navidrome_enabled.to_lowercase() == "true" || navidrome_enabled.to_lowercase() == "yes" {
+    if is_enabled(&torrents_enabled) {
+        println!("Torrent requests enabled.");
+        state.trans_username =
+            Some(env::var("TRANSMISSION_USERNAME").expect("TRANSMISSION_USERNAME not found."));
+        state.trans_username =
+            Some(env::var("TRANSMISSION_PASSWORD").expect("TRANSMISSION_PASSWORD not found."));
+        state.trans_username =
+            Some(env::var("TRANSMISSION_ADDRESS").expect("TRANSMISSION_ADDRESS not found."));
+    }
+
+    if is_enabled(&navidrome_enabled) {
         println!("Navidrome enabled.");
         let navidrome_username: String =
             env::var("NAVIDROME_USERNAME").expect("NAVIDROME_USERNAME not found.");
@@ -103,14 +122,13 @@ async fn main() -> std::io::Result<()> {
         );
     }
 
-    if image_upload_enabled.to_lowercase() == "true" || image_upload_enabled.to_lowercase() == "yes"
-    {
+    if is_enabled(&image_upload_enabled) {
         println!("Image uploader enabled.");
         let uploader_path: String = env::var("UPLOADER_PATH").expect("UPLOADER_PATH not found.");
         state.default_upload_path = Some(uploader_path);
     }
 
-    if mango_enabled.to_lowercase() == "true" || mango_enabled.to_lowercase() == "yes" {
+    if is_enabled(&mango_enabled) {
         println!("Mango enabled.");
         let mango_username: String = env::var("MANGO_USERNAME").expect("MANGO_USERNAME not found.");
         let mango_password: String = env::var("MANGO_PASSWORD").expect("MANGO_PASSWORD not found.");
@@ -124,7 +142,7 @@ async fn main() -> std::io::Result<()> {
         println!("Mango logged in.");
     }
 
-    if hcaptcha_enabled.to_lowercase() == "true" || hcaptcha_enabled.to_lowercase() == "yes" {
+    if is_enabled(&hcaptcha_enabled) {
         println!("HCaptcha enabled.");
         state.hcaptcha_enabled = true;
         state.hcaptcha_sitekey =
@@ -133,8 +151,8 @@ async fn main() -> std::io::Result<()> {
             Some(env::var("HCAPTCHA_SECRET").expect("HCAPTCHA_SECRET not found."));
     }
 
-    if drive_enabled.to_lowercase() == "true" || drive_enabled.to_lowercase() == "yes" {
-        println!("MAL enabled.");
+    if is_enabled(&drive_enabled) {
+        println!("Google drive enabled.");
         let drive_api_key: String = env::var("GDRIVE_API_KEY").expect("GDRIVE_API_KEY not found.");
         let drive_secret_file: String =
             env::var("GDRIVE_APP_SECRET").expect("GDRIVE_APP_SECRET not found.");
@@ -142,8 +160,8 @@ async fn main() -> std::io::Result<()> {
         state.drive = Some(Arc::new(drive));
     }
 
-    if mal_enabled.to_lowercase() == "true" || mal_enabled.to_lowercase() == "yes" {
-        println!("Google Drive enabled.");
+    if is_enabled(&mal_enabled) {
+        println!("MAL enabled.");
         let mal_secret: String = env::var("MAL_SECRET").expect("MAL_SECRET not found.");
         let mal_client_id: String = env::var("MAL_CLIENT_ID").expect("MAL_CLIENT_ID not found.");
         state.mal_client_id = Some(mal_client_id);
@@ -217,7 +235,22 @@ async fn main() -> std::io::Result<()> {
                 Ok(r)
             }
         });
-        if drive_enabled.to_lowercase() == "true" || drive_enabled.to_lowercase() == "yes" {
+        if is_enabled(&torrents_enabled) {
+            app = app
+                .route(
+                    &format!("{}torrents/request", &base_path),
+                    web::post().to(request_torrent),
+                )
+                .route(
+                    &format!("{}torrents/show", &base_path),
+                    web::get().to(show_all_requests),
+                )
+                .route(
+                    &format!("{}admin/torrents/approve", &base_path),
+                    web::post().to(approve_request),
+                );
+        }
+        if is_enabled(&drive_enabled) {
             app = app
                 .route(&format!("{}GoogleDrive", &base_path), web::get().to(gdrive))
                 .route(
@@ -225,7 +258,7 @@ async fn main() -> std::io::Result<()> {
                     web::get().to(gdrive),
                 );
         }
-        if mal_enabled.to_lowercase() == "true" || mal_enabled.to_lowercase() == "yes" {
+        if is_enabled(&mal_enabled) {
             app = app
                 .route(&format!("{}map", &base_path), web::get().to(mal::map))
                 .route(
@@ -249,9 +282,7 @@ async fn main() -> std::io::Result<()> {
                     web::post().to(mal::malupdateanimelist),
                 );
         }
-        if image_upload_enabled.to_lowercase() == "true"
-            || image_upload_enabled.to_lowercase() == "yes"
-        {
+        if is_enabled(&image_upload_enabled) {
             app = app.route(
                 &format!("{}images/upload", &base_path),
                 web::post().to(upload),

@@ -19,6 +19,7 @@ table! {
         id -> Int4,
         link -> Varchar,
         completed -> Bool,
+        requested_by -> Int4,
     }
 }
 
