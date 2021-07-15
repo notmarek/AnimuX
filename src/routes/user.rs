@@ -15,7 +15,6 @@ pub struct AuthThing {
 }
 
 pub async fn check_token(_req: HttpRequest, state: web::Data<State>, data: web::Form<AuthThing>) -> impl Responder {
-    println!("hello {:#?}", data);
     if let Ok(user) = User::from_token(data.token.clone(), state.secret.clone(), &state.database) {
         println!("{} accessed {}", user.username, data.uri);
         HttpResponse::new(StatusCode::OK)
