@@ -15,6 +15,14 @@ table! {
 }
 
 table! {
+    torrent_queue (id) {
+        id -> Int4,
+        link -> Varchar,
+        completed -> Bool,
+    }
+}
+
+table! {
     users (id) {
         id -> Int4,
         username -> Varchar,
@@ -26,5 +34,6 @@ table! {
 allow_tables_to_appear_in_same_query!(
     invites,
     naughty,
+    torrent_queue,
     users,
 );
