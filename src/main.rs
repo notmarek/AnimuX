@@ -197,7 +197,7 @@ async fn main() -> std::io::Result<()> {
                     st.secret.clone(),
                     &st.database,
                 ) {
-                    if req.path().contains(&format!("{}admin", st.base_path)) && user.role == 2 {
+                    if req.path().contains(&format!("{}admin", st.base_path)) && user.role < 2 {
                         println!("{} tried accessing {}, but wasnt an admin, role: {}", user.username, req.path(), user.role);
                         original = false;
                     } else {
