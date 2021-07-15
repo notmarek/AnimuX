@@ -53,7 +53,7 @@ use crate::routes::user::register;
 
 static mut INDEX: Option<Directory> = None;
 
-fn is_enabled(name: &String) -> bool {
+fn is_enabled(name: &str) -> bool {
     !name.is_empty() && (name.to_lowercase() == "true" || name.to_lowercase() == "yes")
 }
 
@@ -197,8 +197,13 @@ async fn main() -> std::io::Result<()> {
                     st.secret.clone(),
                     &st.database,
                 ) {
-                    println!("{} accessed {}", user.username, req.path());
-                    original = true;
+                    if req.path().contains(&format!("{}admin", st.base_path)) && user.role == 2 {
+                        println!("{} tried accessing {}, but wasnt an admin.", user.username, req.path());
+                        original = false;
+                    } else {
+                        println!("{} accessed {}", user.username, req.path());
+                        original = true;
+                    }
                 }
             }
             if !original {
