@@ -44,6 +44,7 @@ use crate::routes::admin::get_all_invites;
 use crate::routes::admin::index_files;
 use crate::routes::images::upload;
 use crate::routes::requests::approve_request;
+use crate::routes::requests::delete_request;
 use crate::routes::requests::request_torrent;
 use crate::routes::requests::show_all_requests;
 use crate::routes::user::all_users;
@@ -198,7 +199,12 @@ async fn main() -> std::io::Result<()> {
                     &st.database,
                 ) {
                     if req.path().contains(&format!("{}admin", st.base_path)) && user.role < 2 {
-                        println!("{} tried accessing {}, but wasnt an admin, role: {}", user.username, req.path(), user.role);
+                        println!(
+                            "{} tried accessing {}, but wasnt an admin, role: {}",
+                            user.username,
+                            req.path(),
+                            user.role
+                        );
                         original = false;
                     } else {
                         println!("{} accessed {}", user.username, req.path());
@@ -253,6 +259,10 @@ async fn main() -> std::io::Result<()> {
                 .route(
                     &format!("{}admin/torrents/approve", &base_path),
                     web::post().to(approve_request),
+                )
+                .route(
+                    &format!("{}admin/torrents/remove", &base_path),
+                    web::post().to(delete_request),
                 );
         }
         if is_enabled(&drive_enabled) {

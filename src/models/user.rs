@@ -48,9 +48,10 @@ impl User {
         let data = serde_json::to_string(&self).unwrap();
         let key: &[u8; 16] = &secret.as_bytes()[..16].try_into().unwrap();
         let cipher = Cipher::new_128(key);
-        let encrypted = cipher.cbc_encrypt(b"0000000000000000",data.as_bytes());
+        let encrypted = cipher.cbc_encrypt(b"0000000000000000", data.as_bytes());
         encode(encrypted)
     }
+
     pub fn from_token(
         token: String,
         secret: String,
@@ -76,6 +77,14 @@ impl User {
             Ok(u) => Ok(u),
             Err(e) => Err(format!("{}", e)),
         }
+    }
+
+    pub fn get(uid: i32, db: &r2d2::Pool<r2d2::ConnectionManager<PgConnection>>) -> Self {
+        use crate::schema::users::dsl::*;
+        users
+            .filter(id.eq(&uid))
+            .first::<User>(&db.get().unwrap())
+            .unwrap()
     }
 
     pub fn get_all(pool: &r2d2::Pool<r2d2::ConnectionManager<PgConnection>>) -> Vec<Self> {

@@ -105,7 +105,18 @@ impl Torrent {
     pub fn get_all(pool: &r2d2::Pool<r2d2::ConnectionManager<PgConnection>>) -> Vec<Self> {
         use crate::schema::torrent_queue::dsl::*;
         let db = pool.get().unwrap();
-        torrent_queue.get_results::<Self>(&db).unwrap()
+        torrent_queue
+            .filter(removed.eq(false))
+            .get_results::<Self>(&db)
+            .unwrap()
+    }
+
+    pub fn remove(self, db: &r2d2::Pool<r2d2::ConnectionManager<PgConnection>>) {
+        use crate::schema::torrent_queue::dsl::*;
+        diesel::update(torrent_queue.find(self.id))
+            .set(removed.eq(true))
+            .execute(&db.get().unwrap())
+            .unwrap();
     }
 
     pub async fn start(

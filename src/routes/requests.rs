@@ -3,8 +3,9 @@ use actix_web::{web, HttpRequest, HttpResponse, Responder};
 use crate::models::torrents::{get_torrent_name, NewTorrent, Torrent};
 use crate::models::user::User;
 use crate::structs::{Response, State};
+use diesel::{prelude::*, r2d2};
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Deserialize)]
 pub struct JsonRequestTorrent {
@@ -14,6 +15,10 @@ pub struct JsonRequestTorrent {
 pub struct JsonRequestApprove {
     id: i32,
     path: String,
+}
+#[derive(Clone, Deserialize)]
+pub struct JsonRequestRemove {
+    id: i32,
 }
 
 pub async fn request_torrent(
@@ -79,10 +84,57 @@ pub async fn approve_request(
     })
 }
 
+pub async fn delete_request(
+    data: web::Json<JsonRequestRemove>,
+    state: web::Data<State>,
+) -> impl Responder {
+    let torrent = Torrent::get(data.id, &state.database).unwrap();
+    torrent.remove(&state.database);
+    HttpResponse::Ok().json(Response {
+        status: String::from("success"),
+        data: "Request removed.",
+    })
+}
+
+#[derive(Serialize, Clone, Deserialize)]
+pub struct TorrentButFancy {
+    id: i32,
+    name: String,
+    link: String,
+    requested_by: String,
+    completed: bool,
+}
+
+impl TorrentButFancy {
+    pub fn from_torrent(
+        t: Torrent,
+        db: &r2d2::Pool<r2d2::ConnectionManager<PgConnection>>,
+    ) -> TorrentButFancy {
+        let username = User::get(t.requested_by, db).username;
+        TorrentButFancy {
+            id: t.id,
+            name: t.name,
+            link: t.link,
+            requested_by: username,
+            completed: t.completed,
+        }
+    }
+
+    pub fn from_torrents(
+        torrents: Vec<Torrent>,
+        db: &r2d2::Pool<r2d2::ConnectionManager<PgConnection>>,
+    ) -> Vec<TorrentButFancy> {
+        torrents
+            .into_iter()
+            .map(|t| TorrentButFancy::from_torrent(t, db))
+            .collect()
+    }
+}
+
 pub async fn show_all_requests(state: web::Data<State>) -> impl Responder {
     let torrents = Torrent::get_all(&state.database);
     HttpResponse::Ok().json(Response {
         status: String::from("success"),
-        data: torrents,
+        data: TorrentButFancy::from_torrents(torrents, &state.database),
     })
 }
