@@ -1,10 +1,10 @@
 use crate::schema::torrent_queue;
-use diesel::prelude::*;
-use diesel::r2d2;
+use diesel::{prelude::*, r2d2};
 use serde::{Deserialize, Serialize};
-use transmission_rpc::types::BasicAuth;
-use transmission_rpc::types::TorrentAddArgs;
-use transmission_rpc::TransClient;
+use transmission_rpc::{
+    types::{BasicAuth, Id, TorrentAddArgs},
+    TransClient,
+};
 
 #[derive(Debug, Queryable, Serialize, Deserialize)]
 pub struct Torrent {
@@ -12,12 +12,15 @@ pub struct Torrent {
     pub link: String,
     pub completed: bool,
     pub requested_by: i32,
+    pub removed: bool,
+    pub name: String,
 }
 
 #[derive(Insertable, Deserialize)]
 #[table_name = "torrent_queue"]
 pub struct NewTorrent {
     pub link: String,
+    pub name: String,
     pub requested_by: i32,
 }
 
@@ -32,16 +35,57 @@ impl NewTorrent {
     }
 }
 
+pub async fn get_torrent_name(
+    link: String,
+    t_username: String,
+    t_password: String,
+    t_url: String,
+) -> Result<String, String> {
+    let client = TransClient::with_auth(
+        &t_url,
+        BasicAuth {
+            user: t_username,
+            password: t_password,
+        },
+    );
+    if let Some(torrent) = client
+        .torrent_add(TorrentAddArgs {
+            filename: Some(link),
+            download_dir: Some("/home/pi/drives/Z/test".to_string()),
+            paused: Some(true),
+            ..TorrentAddArgs::default()
+        })
+        .await
+        .unwrap()
+        .arguments
+        .torrent_added
+    {
+        let torrent_name = torrent.name.unwrap();
+        client
+            .torrent_remove(vec![Id::Id(torrent.id.unwrap())], true)
+            .await
+            .unwrap();
+        Ok(torrent_name)
+    } else {
+        Err("There was an error with the submitted torrent.".to_string())
+    }
+}
+
 impl Torrent {
     pub fn new(
         torrent_link: String,
+        torrent_name: String,
         requester: i32,
         db: &r2d2::Pool<r2d2::ConnectionManager<PgConnection>>,
     ) -> Self {
         use crate::schema::torrent_queue::dsl::*;
         let db = &db.get().unwrap();
         diesel::insert_into(torrent_queue)
-            .values(NewTorrent { link: torrent_link, requested_by: requester })
+            .values(NewTorrent {
+                link: torrent_link,
+                name: torrent_name,
+                requested_by: requester,
+            })
             .get_result::<Self>(db)
             .unwrap()
     }

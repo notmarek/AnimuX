@@ -20,6 +20,8 @@ table! {
         link -> Varchar,
         completed -> Bool,
         requested_by -> Int4,
+        removed -> Bool,
+        name -> Varchar,
     }
 }
 
