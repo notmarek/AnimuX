@@ -57,8 +57,14 @@ pub fn search_dir(
                 new_index.files.push(StorageThing::Directory(Directory {
                     name: format!("{}/{}", parent, dir.name),
                     files: vec![],
-                    mtime: dir.mtime,
+                    mtime: dir.mtime.clone(),
                 }));
+                new_index = search_dir(
+                    dir.clone(),
+                    new_index.clone(),
+                    format!("{}/{}", parent, dir.name),
+                    query.clone(),
+                );
             } else {
                 new_index = search_dir(
                     dir.clone(),
@@ -69,7 +75,7 @@ pub fn search_dir(
             }
         }
         StorageThing::File(file) => {
-            if file.name.as_ref().unwrap().contains(&query) {
+            if file.anime.as_ref().unwrap().contains(&query) {
                 new_index.files.push(StorageThing::File(file));
             }
         }
@@ -101,7 +107,7 @@ pub struct Search {
 
 pub async fn filter_files(data: web::Query<Search>, state: web::Data<State>) -> impl Responder {
     unsafe { 
-        let index = search_dir(INDEX.clone().unwrap(), Directory { name: "Search".to_string(), files: vec![], mtime: Some(String::new())}, "/".to_string(), data.query.clone());
+        let index = search_dir(INDEX.clone().unwrap(), Directory { name: "Search".to_string(), files: vec![], mtime: Some(String::new())}, String::new(), data.query.clone());
         let mut parsed_files = directory_index_to_files(index);
         parsed_files.sort_by(|a, b| file_sort(a, b));
         HttpResponse::Ok().json(parsed_files)
