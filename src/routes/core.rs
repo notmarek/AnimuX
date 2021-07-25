@@ -53,12 +53,12 @@ pub fn search_dir(
     let mut new_index = new_dir.clone();
     full_dir.files.into_iter().for_each(|f| match f {
         StorageThing::Directory(dir) => {
-            if dir.name.contains(&query) {
-                new_index.files.push(StorageThing::Directory(Directory {
-                    name: format!("{}/{}", parent, dir.name),
-                    files: vec![],
-                    mtime: dir.mtime.clone(),
-                }));
+            if dir.name.to_lowercase().contains(&query.to_lowercase()) {
+                // new_index.files.push(StorageThing::Directory(Directory {
+                //     name: format!("{}/{}", parent, dir.name),
+                //     files: vec![],
+                //     mtime: dir.mtime.clone(),
+                // }));
                 new_index = search_dir(
                     dir.clone(),
                     new_index.clone(),
@@ -75,7 +75,7 @@ pub fn search_dir(
             }
         }
         StorageThing::File(file) => {
-            if file.anime.as_ref().unwrap().contains(&query) {
+            if file.anime.as_ref().unwrap().to_lowercase().contains(&query.to_lowercase()) {
                 new_index.files.push(StorageThing::File(file));
             }
         }
