@@ -329,7 +329,8 @@ async fn main() -> std::io::Result<()> {
                 &format!("{}admin/invites", &base_path),
                 web::get().to(get_all_invites),
             )
-            .route(&base_path.to_string(), web::get().to(files)) // Default route
+            .route(&base_path.to_string(), web::get().to(files))
+            .route(&format!("{}/search", &base_path), web::get().to(filter_files)) // Default route
             .route(&format!("{}{{tail:.*}}", &base_path), web::get().to(files)) // Default route
             .app_data(Data::new(state.clone()));
         app

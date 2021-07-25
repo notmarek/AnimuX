@@ -4,6 +4,8 @@ use crate::helpers::file_sort;
 use crate::structs::{Directory, File, ParsedFile, State, StorageThing};
 use crate::INDEX;
 
+use serde::Deserialize;
+
 pub fn directory_index_to_files(index: Directory) -> Vec<ParsedFile> {
     let mut files: Vec<ParsedFile> = Vec::new();
     index.files.into_iter().for_each(|f| match f {
@@ -42,6 +44,40 @@ pub fn get_path_from_index(index: Directory, path: String, iteration: u8) -> Dir
     new_index
 }
 
+pub fn search_dir(
+    full_dir: Directory,
+    new_dir: Directory,
+    parent: String,
+    query: String,
+) -> Directory {
+    let mut new_index = new_dir.clone();
+    full_dir.files.into_iter().for_each(|f| match f {
+        StorageThing::Directory(dir) => {
+            if dir.name.contains(&query) {
+                new_index.files.push(StorageThing::Directory(Directory {
+                    name: format!("{}/{}", parent, dir.name),
+                    files: vec![],
+                    mtime: dir.mtime,
+                }));
+            } else {
+                new_index = search_dir(
+                    dir.clone(),
+                    new_index.clone(),
+                    format!("{}/{}", parent, dir.name),
+                    query.clone(),
+                );
+            }
+        }
+        StorageThing::File(file) => {
+            if file.name.as_ref().unwrap().contains(&query) {
+                new_index.files.push(StorageThing::File(file));
+            }
+        }
+        _ => {}
+    });
+    new_index
+}
+
 pub async fn files(req: HttpRequest, state: web::Data<State>) -> impl Responder {
     let path = req
         .match_info()
@@ -52,6 +88,20 @@ pub async fn files(req: HttpRequest, state: web::Data<State>) -> impl Responder 
         .replace(&state.base_path, "/");
     unsafe {
         let index = get_path_from_index(INDEX.clone().unwrap(), path, 0);
+        let mut parsed_files = directory_index_to_files(index);
+        parsed_files.sort_by(|a, b| file_sort(a, b));
+        HttpResponse::Ok().json(parsed_files)
+    }
+}
+#[derive(Deserialize)]
+struct Search {
+    #[serde(rename = "q")]
+    query: String,
+}
+
+pub async fn filter_files(data: web::Query<Search>, state: web::Data<State>) -> impl Responder {
+    unsafe { 
+        let index = search_dir(INDEX.clone().unwrap(), Directory { name: "Search".to_string(), files: vec![], mtime: String::new()}, "/".to_string(), data.query);
         let mut parsed_files = directory_index_to_files(index);
         parsed_files.sort_by(|a, b| file_sort(a, b));
         HttpResponse::Ok().json(parsed_files)
