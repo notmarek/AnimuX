@@ -94,14 +94,14 @@ pub async fn files(req: HttpRequest, state: web::Data<State>) -> impl Responder 
     }
 }
 #[derive(Deserialize)]
-struct Search {
+pub struct Search {
     #[serde(rename = "q")]
-    query: String,
+    pub query: String,
 }
 
 pub async fn filter_files(data: web::Query<Search>, state: web::Data<State>) -> impl Responder {
     unsafe { 
-        let index = search_dir(INDEX.clone().unwrap(), Directory { name: "Search".to_string(), files: vec![], mtime: String::new()}, "/".to_string(), data.query);
+        let index = search_dir(INDEX.clone().unwrap(), Directory { name: "Search".to_string(), files: vec![], mtime: Some(String::new())}, "/".to_string(), data.query.clone());
         let mut parsed_files = directory_index_to_files(index);
         parsed_files.sort_by(|a, b| file_sort(a, b));
         HttpResponse::Ok().json(parsed_files)
