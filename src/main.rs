@@ -47,6 +47,8 @@ use crate::routes::requests::approve_request;
 use crate::routes::requests::delete_request;
 use crate::routes::requests::request_torrent;
 use crate::routes::requests::show_all_requests;
+use crate::routes::rssmission::current_cfg;
+use crate::routes::rssmission::update_cfg;
 use crate::routes::user::all_users;
 use crate::routes::user::check_token;
 use crate::routes::user::login;
@@ -82,6 +84,7 @@ async fn main() -> std::io::Result<()> {
         trans_address: None,
         trans_password: None,
         trans_username: None,
+        rssmission_config: None,
     };
     let address: String = env::var("ADDRESS").unwrap_or_else(|_| String::from("127.0.0.1"));
     let port: String = env::var("PORT").unwrap_or_else(|_| String::from("8080"));
@@ -93,6 +96,13 @@ async fn main() -> std::io::Result<()> {
     let navidrome_enabled: String = env::var("ENABLE_NAVIDROME").unwrap_or_default();
     let mango_enabled: String = env::var("ENABLE_MANGO").unwrap_or_default();
     let image_upload_enabled: String = env::var("ENABLE_UPLOADER").unwrap_or_default();
+    let rssmission_enabled: String = env::var("ENABLE_RSSMISSION").unwrap_or_default();
+
+    if is_enabled(&rssmission_enabled) {
+        println!("RSSMission settings enabled.");
+        state.rssmission_config =
+            Some(env::var("RSSMISSION_CONFIG").expect("RSSMISSION_CONFIG not found."))
+    }
 
     if is_enabled(&torrents_enabled) {
         println!("Torrent requests enabled.");
@@ -273,6 +283,17 @@ async fn main() -> std::io::Result<()> {
                     web::get().to(gdrive),
                 );
         }
+        if is_enabled(&rssmission_enabled) {
+            app = app
+                .route(
+                    &format!("{}user/rssmission/current.json", &base_path),
+                    web::get().to(current_cfg),
+                )
+                .route(
+                    &format!("{}user/rssmission/update", &base_path),
+                    web::post().to(update_cfg),
+                )
+        }
         if is_enabled(&mal_enabled) {
             app = app
                 .route(&format!("{}map", &base_path), web::get().to(mal::map))
@@ -330,7 +351,10 @@ async fn main() -> std::io::Result<()> {
                 web::get().to(get_all_invites),
             )
             .route(&base_path.to_string(), web::get().to(files))
-            .route(&format!("{}search", &base_path), web::get().to(filter_files)) // Default route
+            .route(
+                &format!("{}search", &base_path),
+                web::get().to(filter_files),
+            ) // Default route
             .route(&format!("{}{{tail:.*}}", &base_path), web::get().to(files)) // Default route
             .app_data(Data::new(state.clone()));
         app

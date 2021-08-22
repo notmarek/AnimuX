@@ -273,6 +273,7 @@ dependencies = [
  "mime-db",
  "pkce",
  "rand 0.8.3",
+ "regex",
  "reqwest",
  "serde",
  "serde_json",
