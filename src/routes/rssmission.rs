@@ -8,13 +8,18 @@ use std::io::Write;
 fn load_cfg(state: &State) -> Config {
     let config_file: String = fs::read_to_string(&state.rssmission_config.as_ref().unwrap())
         .expect("Something went wrong reading the configuration file");
-    let mut cfg: Config = serde_json::from_str(&String::from(config_file)).unwrap();
-    cfg.server = Some(Server {
-        url: Some("classified".to_string()),
-        username: Some("root".to_string()),
-        password: Some("*****".to_string()),
-    });
-    cfg
+    serde_json::from_str(&String::from(config_file)).unwrap()
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct HarmlessConfig {
+    pub feeds: Option<Vec<Feed>>,
+}
+
+impl HarmlessConfig {
+    pub fn fromConfig(cfg: Config) -> Self {
+        HarmlessConfig { feeds: cfg.feeds }
+    }
 }
 
 fn commit_cfg(cfg: &Config, state: &State) {
@@ -84,7 +89,7 @@ pub async fn add_matcher(
     }
     config.feeds = Some(feeds);
     commit_cfg(&config, &state);
-    HttpResponse::Ok().json(config)
+    HttpResponse::Ok().json(HarmlessConfig::fromConfig(config))
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -127,5 +132,5 @@ pub async fn remove_matcher(
     }
     config.feeds = Some(feeds);
     commit_cfg(&config, &state);
-    HttpResponse::Ok().json(config)
+    HttpResponse::Ok().json(HarmlessConfig::fromConfig(config))
 }
