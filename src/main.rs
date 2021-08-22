@@ -49,6 +49,7 @@ use crate::routes::requests::request_torrent;
 use crate::routes::requests::show_all_requests;
 use crate::routes::rssmission::current_cfg;
 use crate::routes::rssmission::add_matcher;
+use crate::routes::rssmission::remove_matcher;
 use crate::routes::user::all_users;
 use crate::routes::user::check_token;
 use crate::routes::user::login;
@@ -290,8 +291,12 @@ async fn main() -> std::io::Result<()> {
                     web::get().to(current_cfg),
                 )
                 .route(
-                    &format!("{}user/rssmission/update", &base_path),
+                    &format!("{}user/rssmission/add", &base_path),
                     web::post().to(add_matcher),
+                )
+                .route(
+                    &format!("{}user/rssmission/remove", &base_path),
+                    web::post().to(remove_matcher),
                 )
         }
         if is_enabled(&mal_enabled) {
