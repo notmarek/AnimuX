@@ -34,3 +34,4 @@ actix-multipart = "0.4.0-beta.5"
 regex = "1"
 mime-db = "1.4.0"
 transmission-rpc = "0.3"
+uuid = { version = "0.8", features = ["v4"] }

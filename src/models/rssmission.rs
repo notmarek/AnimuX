@@ -15,6 +15,7 @@ pub struct Feed {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Matcher {
+    pub id: Option<String>,
     pub regexp: Option<String>,
     pub path: Option<String>,
 }

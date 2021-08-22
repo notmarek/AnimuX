@@ -48,21 +48,35 @@ pub async fn add_matcher(
     let mut feeds: Vec<Feed> = vec![];
     let mut added = false;
     for mut feed in config.feeds.clone().unwrap() {
+        let mut matchers: Vec<Matcher> = feed
+            .matchers
+            .clone()
+            .unwrap()
+            .into_iter()
+            .map(|mut matcher| {
+                if matcher.id.is_none() {
+                    matcher.id = Some(uuid::Uuid::new_v4().to_string());
+                }
+                matcher
+            })
+            .collect();
+
         if !added && feed.url.as_ref().unwrap() == &update.feed_url {
-            let mut matchers = feed.matchers.clone().unwrap();
             matchers.push(Matcher {
+                id: Some(uuid::Uuid::new_v4().to_string()),
                 regexp: update.regexp.clone(),
                 path: update.path.clone(),
             });
-            feed.matchers = Some(matchers);
             added = true;
         }
+        feed.matchers = Some(matchers);
         feeds.push(feed);
     }
     if !added {
         feeds.push(Feed {
             url: Some(update.feed_url.clone()),
             matchers: Some(vec![Matcher {
+                id: Some(uuid::Uuid::new_v4().to_string()),
                 regexp: update.regexp.clone(),
                 path: update.path.clone(),
             }]),
@@ -73,26 +87,42 @@ pub async fn add_matcher(
     HttpResponse::Ok().json(config)
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+pub struct RemoveMatcherJson {
+    pub id: Option<String>,
+}
+
 pub async fn remove_matcher(
     state: web::Data<State>,
-    update: web::Json<UpdateCFGJson>,
+    update: web::Json<RemoveMatcherJson>,
 ) -> impl Responder {
     let mut config = load_cfg(&state);
     let mut feeds: Vec<Feed> = vec![];
     let mut removed = false;
     for mut feed in config.feeds.clone().unwrap() {
-        if !removed && feed.url.as_ref().unwrap() == &update.feed_url {
-            let mut matchers = feed.matchers.clone().unwrap();
+        let mut matchers: Vec<Matcher> = feed
+            .matchers
+            .clone()
+            .unwrap()
+            .into_iter()
+            .map(|mut matcher| {
+                if matcher.id.is_none() {
+                    matcher.id = Some(uuid::Uuid::new_v4().to_string());
+                }
+                matcher
+            })
+            .collect();
+        if !removed {
             let index = matchers
                 .iter()
-                .position(|matcher| matcher.path == update.path || matcher.regexp == update.regexp)
+                .position(|matcher| matcher.id.as_ref().unwrap() == update.id.as_ref().unwrap())
                 .unwrap_or(133769);
             if index != 133769 {
                 matchers.remove(index);
-                feed.matchers = Some(matchers);
+                removed = true;
             }
-            removed = true;
         }
+        feed.matchers = Some(matchers);
         feeds.push(feed);
     }
     config.feeds = Some(feeds);
