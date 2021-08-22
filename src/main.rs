@@ -287,15 +287,15 @@ async fn main() -> std::io::Result<()> {
         if is_enabled(&rssmission_enabled) {
             app = app
                 .route(
-                    &format!("{}user/rssmission/current.json", &base_path),
+                    &format!("{}admin/rssmission/current.json", &base_path),
                     web::get().to(current_cfg),
                 )
                 .route(
-                    &format!("{}user/rssmission/add", &base_path),
+                    &format!("{}admin/rssmission/add", &base_path),
                     web::post().to(add_matcher),
                 )
                 .route(
-                    &format!("{}user/rssmission/remove", &base_path),
+                    &format!("{}admin/rssmission/remove", &base_path),
                     web::post().to(remove_matcher),
                 )
         }
