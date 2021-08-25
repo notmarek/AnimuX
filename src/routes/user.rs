@@ -1,12 +1,12 @@
 use std::collections::HashMap;
 
-use actix_web::{web, HttpResponse, Responder, HttpRequest, http::StatusCode};
+use actix_web::{http::StatusCode, web, HttpRequest, HttpResponse, Responder};
 
 use crate::models::user::{JsonUserAuth, Roles, User};
 use crate::structs::{HCaptchaResponse, Response, State};
 use reqwest;
 use serde::Deserialize;
- 
+
 #[derive(Deserialize, Debug)]
 pub struct AuthThing {
     pub token: String,
@@ -14,12 +14,19 @@ pub struct AuthThing {
     pub ip: String,
 }
 
-pub async fn check_token(_req: HttpRequest, state: web::Data<State>, data: web::Form<AuthThing>) -> impl Responder {
+pub async fn check_token(
+    _req: HttpRequest,
+    state: web::Data<State>,
+    data: web::Form<AuthThing>,
+) -> impl Responder {
     if let Ok(user) = User::from_token(data.token.clone(), state.secret.clone(), &state.database) {
         println!("{} accessed {}", user.username, data.uri);
         HttpResponse::new(StatusCode::OK)
     } else {
-        println!("{} tried using the token \"{}\" to access {}", data.ip, data.token, data.uri);
+        println!(
+            "{} tried using the token \"{}\" to access {}",
+            data.ip, data.token, data.uri
+        );
         HttpResponse::new(StatusCode::FORBIDDEN)
     }
 }
@@ -53,18 +60,27 @@ pub async fn register(data: web::Json<JsonUserAuth>, state: web::Data<State>) ->
             .unwrap();
         if !resp.success {
             println!("Someone has failed the captcha.");
-            return HttpResponse::Ok().json(Response {
-                status: String::from("error"),
-                data: "Can't you even do the captcha man?",
-            });
+            return crate::coolshit::encrypted_json_response(
+                Response {
+                    status: String::from("error"),
+                    data: "Can't you even do the captcha man?",
+                },
+                &state.response_secret,
+            );
         }
     }
     if data.invite.is_none() || data.invite.as_ref().unwrap().len() < 8 {
-        println!("Someone has used an invalid invite - \"{}\"", data.invite.as_ref().unwrap());
-        return HttpResponse::Ok().json(Response {
-            status: String::from("error"),
-            data: "You need to specify a valid invite.",
-        });
+        println!(
+            "Someone has used an invalid invite - \"{}\"",
+            data.invite.as_ref().unwrap()
+        );
+        return crate::coolshit::encrypted_json_response(
+            Response {
+                status: String::from("error"),
+                data: "You need to specify a valid invite.",
+            },
+            &state.response_secret,
+        );
     }
     let user = User::register(
         data.username.clone(),
@@ -94,15 +110,21 @@ pub async fn register(data: web::Json<JsonUserAuth>, state: web::Data<State>) ->
                     .create_account(data.username.clone(), data.password.clone())
                     .await;
             }
-            HttpResponse::Ok().json(Response {
-                status: String::from("success"),
-                data: u,
-            })
+            crate::coolshit::encrypted_json_response(
+                Response {
+                    status: String::from("success"),
+                    data: u,
+                },
+                &state.response_secret,
+            )
         }
-        Err(e) => HttpResponse::Ok().json(Response {
-            status: String::from("error"),
-            data: e,
-        }),
+        Err(e) => crate::coolshit::encrypted_json_response(
+            Response {
+                status: String::from("error"),
+                data: e,
+            },
+            &state.response_secret,
+        ),
     }
 }
 
@@ -114,21 +136,30 @@ pub async fn login(data: web::Json<JsonUserAuth>, state: web::Data<State>) -> im
         &state.database,
     );
     match user {
-        Ok(u) => HttpResponse::Ok().json(Response {
-            status: String::from("success"),
-            data: u,
-        }),
-        Err(e) => HttpResponse::Ok().json(Response {
-            status: String::from("error"),
-            data: e,
-        }),
+        Ok(u) => crate::coolshit::encrypted_json_response(
+            Response {
+                status: String::from("success"),
+                data: u,
+            },
+            &state.response_secret,
+        ),
+        Err(e) => crate::coolshit::encrypted_json_response(
+            Response {
+                status: String::from("error"),
+                data: e,
+            },
+            &state.response_secret,
+        ),
     }
 }
 
 pub async fn all_users(state: web::Data<State>) -> impl Responder {
     let users: Vec<User> = User::get_all(&state.database);
-    HttpResponse::Ok().json(Response {
-        status: String::from("success"),
-        data: users,
-    })
+    crate::coolshit::encrypted_json_response(
+        Response {
+            status: String::from("success"),
+            data: users,
+        },
+        &state.response_secret,
+    )
 }

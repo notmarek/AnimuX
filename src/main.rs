@@ -12,6 +12,7 @@ mod navidrome;
 mod routes;
 mod schema;
 mod structs;
+mod coolshit;
 
 use actix_web::HttpResponse;
 
@@ -86,9 +87,11 @@ async fn main() -> std::io::Result<()> {
         trans_password: None,
         trans_username: None,
         rssmission_config: None,
+        response_secret: String::new(),
     };
     let address: String = env::var("ADDRESS").unwrap_or_else(|_| String::from("127.0.0.1"));
     let port: String = env::var("PORT").unwrap_or_else(|_| String::from("8080"));
+    state.response_secret = env::var("RESPONSE_SECRET").unwrap_or_else(|_| String::from("oifdufhjioashfjkdash"));
     state.root_folder = env::var("ROOT_FOLDER").unwrap_or_else(|_| "/home/pi/Y/Animu/".to_string());
     let hcaptcha_enabled: String = env::var("HCAPTCHA_ENABLED").unwrap_or_default();
     let drive_enabled: String = env::var("ENABLE_GDRIVE").unwrap_or_default();

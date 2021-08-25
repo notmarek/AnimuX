@@ -42,6 +42,7 @@ pub struct State {
     pub trans_password: Option<String>,
     pub trans_address: Option<String>,
     pub rssmission_config: Option<String>,
+    pub response_secret: String,
 }
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Response<T: Serialize> {

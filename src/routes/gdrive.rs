@@ -23,5 +23,5 @@ pub async fn gdrive(req: HttpRequest, data: web::Data<State>) -> impl Responder 
     let google_files = drive.get_files_in_folder(&new_path).await.files.unwrap();
     let mut files = parse_google_files(google_files, drive).await;
     files.sort_by(|a, b| file_sort(a, b));
-    HttpResponse::Ok().json(files)
+    crate::coolshit::encrypted_json_response(files, &data.response_secret)
 }

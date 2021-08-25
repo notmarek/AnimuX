@@ -11,18 +11,18 @@ use crate::models::invites::Invite;
 
 pub async fn create_invite(state: web::Data<State>) -> impl Responder {
     let inv = Invite::generate(&state.database);
-    HttpResponse::Ok().json(Response {
+    crate::coolshit::encrypted_json_response(Response {
         status: String::from("success"),
         data: inv.invite,
-    })
+    }, &state.response_secret)
 }
 
 pub async fn get_all_invites(state: web::Data<State>) -> impl Responder {
     let invites: Vec<Invite> = Invite::get_all(&state.database);
-    HttpResponse::Ok().json(Response {
+    crate::coolshit::encrypted_json_response(Response {
         status: String::from("success"),
         data: invites,
-    })
+    }, &state.response_secret)
 }
 
 pub fn index_folder(folder: String, root_folder: bool) -> Directory {
@@ -153,8 +153,8 @@ pub async fn index_files(state: web::Data<State>) -> impl Responder {
         INDEX = Some(dynamic_merge(i));
     }
 
-    HttpResponse::Ok().json(Response {
+    crate::coolshit::encrypted_json_response(Response {
         status: String::from("success"),
         data: "Reindexed all files.",
-    })
+    }, &state.response_secret)
 }

@@ -35,7 +35,7 @@ fn commit_cfg(cfg: &Config, state: &State) {
 
 pub async fn current_cfg(state: web::Data<State>) -> impl Responder {
     let config = load_cfg(&state);
-    HttpResponse::Ok().json(config)
+    crate::coolshit::encrypted_json_response(config, &state.response_secret)
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -89,7 +89,7 @@ pub async fn add_matcher(
     }
     config.feeds = Some(feeds);
     commit_cfg(&config, &state);
-    HttpResponse::Ok().json(HarmlessConfig::fromConfig(config))
+    crate::coolshit::encrypted_json_response(HarmlessConfig::fromConfig(config), &state.response_secret)
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -132,5 +132,5 @@ pub async fn remove_matcher(
     }
     config.feeds = Some(feeds);
     commit_cfg(&config, &state);
-    HttpResponse::Ok().json(HarmlessConfig::fromConfig(config))
+    crate::coolshit::encrypted_json_response(HarmlessConfig::fromConfig(config), &state.response_secret)
 }

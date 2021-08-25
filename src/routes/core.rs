@@ -96,7 +96,7 @@ pub async fn files(req: HttpRequest, state: web::Data<State>) -> impl Responder 
         let index = get_path_from_index(INDEX.clone().unwrap(), path, 0);
         let mut parsed_files = directory_index_to_files(index);
         parsed_files.sort_by(|a, b| file_sort(a, b));
-        HttpResponse::Ok().json(parsed_files)
+        crate::coolshit::encrypted_json_response(parsed_files, &state.response_secret)
     }
 }
 #[derive(Deserialize)]
@@ -110,7 +110,7 @@ pub async fn filter_files(data: web::Query<Search>, state: web::Data<State>) -> 
         let index = search_dir(INDEX.clone().unwrap(), Directory { name: "Search".to_string(), files: vec![], mtime: Some(String::new())}, String::new(), data.query.clone());
         let mut parsed_files = directory_index_to_files(index);
         parsed_files.sort_by(|a, b| file_sort(a, b));
-        HttpResponse::Ok().json(parsed_files)
+        crate::coolshit::encrypted_json_response(parsed_files, &state.response_secret)
     }
 }
 
@@ -142,5 +142,5 @@ pub async fn filter_files(data: web::Query<Search>, state: web::Data<State>) -> 
 //         .collect();
 //     let mut parsed_files: Vec<ParsedFile> = parse_files(files);
 //     parsed_files.sort_by(|a, b| file_sort(a, b));
-//     HttpResponse::Ok().json(parsed_files)
+//     crate::coolshit::encrypted_json_response(parsed_files)
 // }
