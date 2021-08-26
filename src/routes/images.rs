@@ -67,11 +67,11 @@ pub async fn upload(
             .unwrap();
     }
 
-    return crate::coolshit::encrypted_json_response(Response {
+    return HttpResponse::Ok().json(Response {
         status: String::from("success"),
         data: format!(
             "https://i.notmarek.com/{}/{}.{}",
             &user.username, filename, extension
         ),
-    }, &state.response_secret);
+    });
 }
