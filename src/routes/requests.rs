@@ -1,4 +1,4 @@
-use actix_web::{web, HttpRequest, HttpResponse, Responder};
+use actix_web::{web, HttpRequest, Responder};
 
 use crate::models::torrents::{get_torrent_name, NewTorrent, Torrent};
 use crate::models::user::User;
@@ -52,15 +52,21 @@ pub async fn request_torrent(
                 requested_by: user.id,
             };
             new_torrent.insert(&state.database);
-            crate::coolshit::encrypted_json_response(Response {
-                status: String::from("success"),
-                data: "Torrent added to queue.",
-            }, &state.response_secret)
+            crate::coolshit::encrypted_json_response(
+                Response {
+                    status: String::from("success"),
+                    data: "Torrent added to queue.",
+                },
+                &state.response_secret,
+            )
         }
-        Err(e) => crate::coolshit::encrypted_json_response(Response {
-            status: String::from("error"),
-            data: e,
-        }, &state.response_secret),
+        Err(e) => crate::coolshit::encrypted_json_response(
+            Response {
+                status: String::from("error"),
+                data: e,
+            },
+            &state.response_secret,
+        ),
     }
 }
 
@@ -78,10 +84,13 @@ pub async fn approve_request(
             &state.database,
         )
         .await;
-    crate::coolshit::encrypted_json_response(Response {
-        status: String::from("success"),
-        data: "Torrent approved and added to transmission",
-    }, &state.response_secret)
+    crate::coolshit::encrypted_json_response(
+        Response {
+            status: String::from("success"),
+            data: "Torrent approved and added to transmission",
+        },
+        &state.response_secret,
+    )
 }
 
 pub async fn delete_request(
@@ -90,10 +99,13 @@ pub async fn delete_request(
 ) -> impl Responder {
     let torrent = Torrent::get(data.id, &state.database).unwrap();
     torrent.remove(&state.database);
-    crate::coolshit::encrypted_json_response(Response {
-        status: String::from("success"),
-        data: "Request removed.",
-    }, &state.response_secret)
+    crate::coolshit::encrypted_json_response(
+        Response {
+            status: String::from("success"),
+            data: "Request removed.",
+        },
+        &state.response_secret,
+    )
 }
 
 #[derive(Serialize, Clone, Deserialize)]
@@ -133,8 +145,11 @@ impl TorrentButFancy {
 
 pub async fn show_all_requests(state: web::Data<State>) -> impl Responder {
     let torrents = Torrent::get_all(&state.database);
-    crate::coolshit::encrypted_json_response(Response {
-        status: String::from("success"),
-        data: TorrentButFancy::from_torrents(torrents, &state.database),
-    }, &state.response_secret)
+    crate::coolshit::encrypted_json_response(
+        Response {
+            status: String::from("success"),
+            data: TorrentButFancy::from_torrents(torrents, &state.database),
+        },
+        &state.response_secret,
+    )
 }

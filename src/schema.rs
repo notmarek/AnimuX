@@ -1,4 +1,14 @@
 table! {
+    anilist (id) {
+        id -> Int4,
+        anime_name -> Varchar,
+        anilist_id -> Nullable<Int4>,
+        preview_image -> Nullable<Varchar>,
+        not_found -> Bool,
+    }
+}
+
+table! {
     invites (id) {
         id -> Int4,
         invite -> Varchar,
@@ -35,6 +45,7 @@ table! {
 }
 
 allow_tables_to_appear_in_same_query!(
+    anilist,
     invites,
     naughty,
     torrent_queue,

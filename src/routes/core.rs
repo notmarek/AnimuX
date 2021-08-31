@@ -1,4 +1,4 @@
-use actix_web::{web, HttpRequest, HttpResponse, Responder};
+use actix_web::{web, HttpRequest, Responder};
 
 use crate::helpers::file_sort;
 use crate::structs::{Directory, File, ParsedFile, State, StorageThing};
@@ -50,32 +50,24 @@ pub fn search_dir(
     parent: String,
     query: String,
 ) -> Directory {
-    let mut new_index = new_dir.clone();
+    let mut new_index = new_dir;
     full_dir.files.into_iter().for_each(|f| match f {
         StorageThing::Directory(dir) => {
-            if dir.name.to_lowercase().contains(&query.to_lowercase()) {
-                // new_index.files.push(StorageThing::Directory(Directory {
-                //     name: format!("{}/{}", parent, dir.name),
-                //     files: vec![],
-                //     mtime: dir.mtime.clone(),
-                // }));
-                new_index = search_dir(
-                    dir.clone(),
-                    new_index.clone(),
-                    format!("{}/{}", parent, dir.name),
-                    query.clone(),
-                );
-            } else {
-                new_index = search_dir(
-                    dir.clone(),
-                    new_index.clone(),
-                    format!("{}/{}", parent, dir.name),
-                    query.clone(),
-                );
-            }
+            new_index = search_dir(
+                dir.clone(),
+                new_index.clone(),
+                format!("{}/{}", parent, dir.name),
+                query.clone(),
+            );
         }
         StorageThing::File(file) => {
-            if file.anime.as_ref().unwrap().to_lowercase().contains(&query.to_lowercase()) {
+            if file
+                .anime
+                .as_ref()
+                .unwrap()
+                .to_lowercase()
+                .contains(&query.to_lowercase())
+            {
                 new_index.files.push(StorageThing::File(file));
             }
         }
@@ -106,8 +98,17 @@ pub struct Search {
 }
 
 pub async fn filter_files(data: web::Query<Search>, state: web::Data<State>) -> impl Responder {
-    unsafe { 
-        let index = search_dir(INDEX.clone().unwrap(), Directory { name: "Search".to_string(), files: vec![], mtime: Some(String::new())}, String::new(), data.query.clone());
+    unsafe {
+        let index = search_dir(
+            INDEX.clone().unwrap(),
+            Directory {
+                name: "Search".to_string(),
+                files: vec![],
+                mtime: Some(String::new()),
+            },
+            String::new(),
+            data.query.clone(),
+        );
         let mut parsed_files = directory_index_to_files(index);
         parsed_files.sort_by(|a, b| file_sort(a, b));
         crate::coolshit::encrypted_json_response(parsed_files, &state.response_secret)

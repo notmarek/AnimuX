@@ -107,7 +107,7 @@ impl User {
             ));
         }
         use crate::schema::users::dsl::*;
-        let invite = match Invite::get(invite, &pool) {
+        let invite = match Invite::get(invite, pool) {
             Ok(i) => i,
             Err(e) => return Err(e),
         };
@@ -133,7 +133,7 @@ impl User {
                     .get_result::<User>(&db)
                 {
                     Ok(u) => {
-                        match invite.mark_as_used(&pool) {
+                        match invite.mark_as_used(pool) {
                             Ok(_) => (),
                             Err(e) => return Err(e),
                         };

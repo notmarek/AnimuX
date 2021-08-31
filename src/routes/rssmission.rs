@@ -1,6 +1,6 @@
-use crate::models::rssmission::{Config, Feed, Matcher, Server};
+use crate::models::rssmission::{Config, Feed, Matcher};
 use crate::structs::State;
-use actix_web::{web, HttpResponse, Responder};
+use actix_web::{web, Responder};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io::Write;
@@ -8,7 +8,7 @@ use std::io::Write;
 fn load_cfg(state: &State) -> Config {
     let config_file: String = fs::read_to_string(&state.rssmission_config.as_ref().unwrap())
         .expect("Something went wrong reading the configuration file");
-    serde_json::from_str(&String::from(config_file)).unwrap()
+    serde_json::from_str(&config_file).unwrap()
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -17,7 +17,7 @@ pub struct HarmlessConfig {
 }
 
 impl HarmlessConfig {
-    pub fn fromConfig(cfg: Config) -> Self {
+    pub fn from_config(cfg: Config) -> Self {
         HarmlessConfig { feeds: cfg.feeds }
     }
 }
@@ -28,7 +28,7 @@ fn commit_cfg(cfg: &Config, state: &State) {
         .open(state.rssmission_config.as_ref().unwrap())
         .unwrap();
     file.set_len(0).unwrap();
-    file.write(&serde_json::to_string(&cfg).unwrap().as_bytes())
+    file.write_all(serde_json::to_string(&cfg).unwrap().as_bytes())
         .unwrap();
     file.flush().unwrap();
 }
@@ -89,7 +89,10 @@ pub async fn add_matcher(
     }
     config.feeds = Some(feeds);
     commit_cfg(&config, &state);
-    crate::coolshit::encrypted_json_response(HarmlessConfig::fromConfig(config), &state.response_secret)
+    crate::coolshit::encrypted_json_response(
+        HarmlessConfig::from_config(config),
+        &state.response_secret,
+    )
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -132,5 +135,8 @@ pub async fn remove_matcher(
     }
     config.feeds = Some(feeds);
     commit_cfg(&config, &state);
-    crate::coolshit::encrypted_json_response(HarmlessConfig::fromConfig(config), &state.response_secret)
+    crate::coolshit::encrypted_json_response(
+        HarmlessConfig::from_config(config),
+        &state.response_secret,
+    )
 }
