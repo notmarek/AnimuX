@@ -13,7 +13,7 @@ mod routes;
 mod schema;
 mod structs;
 mod coolshit;
-
+mod utils;
 use actix_web::HttpResponse;
 
 use actix_web::http::HeaderName;
