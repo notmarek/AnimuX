@@ -84,3 +84,40 @@ pub async fn get_anime_info(id: u32, client: Option<Client>) -> AnilistAnimeInfo
         .await
         .unwrap()
 }
+
+pub async fn search_anime(q: String, client: Option<Client>) -> AnilistAnimeInfo {
+    let client = client.unwrap_or(Client::new());
+
+    let query: &str = "query ($q: String) {
+        Media(type: ANIME, search: $q) {
+          id
+          title {
+            userPreferred
+          }
+          description
+          episodes
+          streamingEpisodes {
+            thumbnail
+            title
+          }
+          source
+          bannerImage
+          coverImage {
+            extraLarge
+            color
+          }
+          averageScore
+          isAdult
+        }
+    }";
+    let data = json!({"query": query, "variables": {"q": q}});
+    client
+        .post("https://graphql.anilist.co/")
+        .json(&data)
+        .send()
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap()
+}
