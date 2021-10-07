@@ -362,6 +362,9 @@ async fn main() -> std::io::Result<()> {
             .route(
                 &format!("{}search", &base_path),
                 web::get().to(filter_files),
+            ).route(
+                &format!("{}test", &base_path),
+                web::get().to(routes::test::test_search),
             ) // Default route
             .route(&format!("{}{{tail:.*}}", &base_path), web::get().to(files)) // Default route
             .app_data(Data::new(state.clone()));

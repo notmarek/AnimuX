@@ -6,7 +6,7 @@ use serde_json::json;
 pub struct AnilistTitle {
     #[serde(rename = "userPreferred")]
     pub user_preferred: String,
-    pub romanji: String,
+    pub romaji: String,
     pub english: String,
     pub native: String,
 }
@@ -21,7 +21,7 @@ pub struct AnilistEpisode {
 pub struct AnilistCoverImage {
     #[serde(rename = "extraLarge")]
     pub extra_large: String,
-    pub color: String,
+    pub color: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -34,7 +34,7 @@ pub struct AnilistMedia {
     pub streaming_episodes: Vec<AnilistEpisode>,
     pub source: String,
     #[serde(rename = "bannerImage")]
-    pub banner_image: String,
+    pub banner_image: Option<String>,
     #[serde(rename = "coverImage")]
     pub cover_image: AnilistCoverImage,
     #[serde(rename = "averageScore")]
@@ -48,7 +48,11 @@ pub struct AnilistAnimeInfo {
     pub media: AnilistMedia,
 }
 
-pub async fn get_anime_info(id: u32, client: Option<Client>) -> AnilistAnimeInfo {
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ALAnimeData {
+    pub data: AnilistAnimeInfo,
+}
+pub async fn get_anime_info(id: u32, client: Option<Client>) -> ALAnimeData {
     let client = client.unwrap_or(Client::new());
 
     let query: &str = "query ($id: Int) {
@@ -56,6 +60,9 @@ pub async fn get_anime_info(id: u32, client: Option<Client>) -> AnilistAnimeInfo
             id
             title {
               userPreferred
+              romaji
+              english
+              native
             }
             description
             episodes
@@ -85,7 +92,7 @@ pub async fn get_anime_info(id: u32, client: Option<Client>) -> AnilistAnimeInfo
         .unwrap()
 }
 
-pub async fn search_anime(q: String, client: Option<Client>) -> AnilistAnimeInfo {
+pub async fn search_anime(q: String, client: Option<Client>) -> ALAnimeData {
     let client = client.unwrap_or(Client::new());
 
     let query: &str = "query ($q: String) {
@@ -93,6 +100,9 @@ pub async fn search_anime(q: String, client: Option<Client>) -> AnilistAnimeInfo
           id
           title {
             userPreferred
+            romaji
+            english
+            native
           }
           description
           episodes

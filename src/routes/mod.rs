@@ -6,3 +6,4 @@ pub mod user;
 pub mod images;
 pub mod requests;
 pub mod rssmission;
+pub mod test;
