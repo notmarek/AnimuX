@@ -1,73 +1,109 @@
-use crate::schema::anilist;
+use std::string;
+
+use crate::schema::anime_info;
 use diesel::prelude::*;
 use diesel::r2d2;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Queryable, Serialize, Deserialize)]
-pub struct AnilistEntry {
+#[derive(Debug, Queryable, Serialize, Deserialize, Default)]
+pub struct AnimeInfo {
     pub id: i32,
-    pub anime_name: String,
+    pub real_name: String,
     pub anilist_id: Option<i32>,
-    pub preview_image: Option<String>,
+    pub cover: Option<String>,
+    pub banner: Option<String>,
+    pub description: Option<String>,
+    pub episodes: Option<i32>,
+    pub title_preffered: Option<String>,
+    pub title_romanji: Option<String>,
+    pub title_original: Option<String>,
+    pub title_english: Option<String>,
+    pub score: Option<i32>,
+    pub is_adult: Option<bool>,
+    pub source_material: Option<String>,
     pub not_found: bool,
 }
 
 #[derive(Insertable)]
-#[table_name = "anilist"]
-pub struct NewAnilistEntry {
-    pub anime_name: String,
+#[table_name = "anime_info"]
+pub struct NewAnimeInfoEntry {
+    pub real_name: String,
     pub anilist_id: i32,
-    pub preview_image: String,
+    pub cover: String,
+    pub banner: String,
+    pub description: String,
+    pub episodes: i32,
+    pub title_preffered: String,
+    pub title_romanji: String,
+    pub title_original: String,
+    pub title_english: String,
+    pub score: i32,
+    pub is_adult: bool,
+    pub source_material: String,
 }
 
 #[derive(Insertable)]
-#[table_name = "anilist"]
-pub struct NotFoundAnilistEntry {
-    pub anime_name: String,
+#[table_name = "anime_info"]
+pub struct NotFoundAnimeInfoEntry {
+    pub real_name: String,
     pub not_found: bool,
 }
 
-impl AnilistEntry {
+impl AnimeInfo {
     pub fn get(
         name: String,
         db: &r2d2::Pool<r2d2::ConnectionManager<PgConnection>>,
     ) -> Result<Self, String> {
-        use crate::schema::anilist::dsl::*;
+        use crate::schema::anime_info::dsl::*;
         let db = db.get().unwrap();
-        match anilist
-            .filter(anime_name.eq(&name))
-            .first::<AnilistEntry>(&db)
+        match anime_info
+            .filter(real_name.eq(&name))
+            .first::<Self>(&db)
         {
             Ok(e) => Ok(e),
-            Err(_) => Err(String::from("Invite not found.")),
+            Err(_) => Err(String::from("Anime not found.")),
         }
     }
 
     pub fn new(
         name: String,
         al_id: i32,
-        preview: String,
+        cover_img: String,
+        banner_img: String,
+        desc: String,
+        eps: i32,
+        preffered: String,
+        english: String,
+        original: String,
+        romanji: String,
+        avg_score: i32,
+        adult: bool,
+        src: String,
         db: &r2d2::Pool<r2d2::ConnectionManager<PgConnection>>,
     ) -> Self {
-        use crate::schema::anilist::dsl::*;
+        use crate::schema::anime_info::dsl::*;
         let db = db.get().unwrap();
-        let entry = NewAnilistEntry {
-            anime_name: name,
+        let entry = NewAnimeInfoEntry {
+            real_name: name,
             anilist_id: al_id,
-            preview_image: preview,
+            cover: cover_img,
+            banner: banner_img,
+            description: desc,
+            episodes: eps,
+            title_preffered: preffered,
+            title_english: english,
+            title_original: original,
+            title_romanji: romanji,
+            score: avg_score,
+            is_adult: adult,
+            source_material: src,
         };
-        match diesel::insert_into(anilist)
+        match diesel::insert_into(anime_info)
             .values(entry)
             .get_result::<Self>(&db)
         {
             Ok(u) => u,
-            _ => Self {
-                id: 0,
-                anime_name: String::new(),
-                anilist_id: None,
-                preview_image: None,
-                not_found: false,
-            },
+            _ => Self::default(),
         }
     }
 
@@ -75,24 +111,18 @@ impl AnilistEntry {
         name: String,
         db: &r2d2::Pool<r2d2::ConnectionManager<PgConnection>>,
     ) -> Self {
-        use crate::schema::anilist::dsl::*;
+        use crate::schema::anime_info::dsl::*;
         let db = db.get().unwrap();
-        let entry = NotFoundAnilistEntry {
-            anime_name: name,
+        let entry = NotFoundAnimeInfoEntry {
+            real_name: name,
             not_found: true,
         };
-        match diesel::insert_into(anilist)
+        match diesel::insert_into(anime_info)
             .values(entry)
             .get_result::<Self>(&db)
         {
             Ok(u) => u,
-            _ => Self {
-                id: 0,
-                anime_name: String::new(),
-                anilist_id: None,
-                preview_image: None,
-                not_found: false,
-            },
+            _ => Self::default(),
         }
     }
 }

@@ -1,9 +1,19 @@
 table! {
-    anilist (id) {
+    anime_info (id) {
         id -> Int4,
-        anime_name -> Varchar,
+        real_name -> Varchar,
         anilist_id -> Nullable<Int4>,
-        preview_image -> Nullable<Varchar>,
+        cover -> Nullable<Varchar>,
+        banner -> Nullable<Varchar>,
+        description -> Nullable<Varchar>,
+        episodes -> Nullable<Int4>,
+        title_preffered -> Nullable<Varchar>,
+        title_romanji -> Nullable<Varchar>,
+        title_original -> Nullable<Varchar>,
+        title_english -> Nullable<Varchar>,
+        score -> Nullable<Int4>,
+        is_adult -> Nullable<Bool>,
+        source_material -> Nullable<Varchar>,
         not_found -> Bool,
     }
 }
@@ -45,7 +55,7 @@ table! {
 }
 
 allow_tables_to_appear_in_same_query!(
-    anilist,
+    anime_info,
     invites,
     naughty,
     torrent_queue,

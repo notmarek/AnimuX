@@ -1,0 +1,1 @@
+DROP TABLE public.anime_info;
