@@ -35,6 +35,15 @@ table! {
 }
 
 table! {
+    storage (id) {
+        id -> Int4,
+        path -> Varchar,
+        name -> Varchar,
+        exceptions -> Array<Text>,
+    }
+}
+
+table! {
     torrent_queue (id) {
         id -> Int4,
         link -> Varchar,
@@ -58,6 +67,7 @@ allow_tables_to_appear_in_same_query!(
     anime_info,
     invites,
     naughty,
+    storage,
     torrent_queue,
     users,
 );
