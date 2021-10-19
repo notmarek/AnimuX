@@ -2,7 +2,7 @@ use std::cmp::Ordering;
 
 use crate::structs::*;
 
-use crate::googledrive::{Drive, GoogleDrive};
+// use crate::googledrive::{Drive, GoogleDrive};
 // pub fn parse_files(files: Vec<File>) -> Vec<ParsedFile> {
 //     files
 //         .into_iter()
@@ -10,16 +10,16 @@ use crate::googledrive::{Drive, GoogleDrive};
 //         .collect()
 // }
 
-pub async fn parse_google_files(
-    files: Vec<google_drive3::api::File>,
-    drive: &Drive,
-) -> Vec<ParsedFile> {
-    let mut parsed_files: Vec<ParsedFile> = Vec::new();
-    for file in files {
-        parsed_files.push(drive.parse_file(file).await)
-    }
-    parsed_files
-}
+// pub async fn parse_google_files(
+//     files: Vec<google_drive3::api::File>,
+//     drive: &Drive,
+// ) -> Vec<ParsedFile> {
+//     let mut parsed_files: Vec<ParsedFile> = Vec::new();
+//     for file in files {
+//         parsed_files.push(drive.parse_file(file).await)
+//     }
+//     parsed_files
+// }
 
 pub fn file_sort(a: &ParsedFile, b: &ParsedFile) -> Ordering {
     if a.kind.as_ref().unwrap() == "file"

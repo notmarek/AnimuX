@@ -1,9 +1,12 @@
 use actix_web::{web, HttpResponse, Responder};
 
 use std::fs;
-
+use async_recursion::async_recursion;
 use chrono::{DateTime, Utc};
+use diesel::prelude::*;
+use diesel::r2d2;
 
+// use crate::models::storage::Storage;
 use crate::structs::{Directory, File, ParsedFile, Response, State, StorageThing};
 use crate::INDEX;
 
@@ -19,13 +22,21 @@ pub async fn create_invite(state: web::Data<State>) -> impl Responder {
 
 pub async fn get_all_invites(state: web::Data<State>) -> impl Responder {
     let invites: Vec<Invite> = Invite::get_all(&state.database);
-    crate::coolshit::encrypted_json_response(Response {
-        status: String::from("success"),
-        data: invites,
-    }, &state.response_secret)
+    crate::coolshit::encrypted_json_response(
+        Response {
+            status: String::from("success"),
+            data: invites,
+        },
+        &state.response_secret,
+    )
 }
 
-pub fn index_folder(folder: String, root_folder: bool) -> Directory {
+#[async_recursion(?Send)]
+pub async fn index_folder(
+    folder: String,
+    root_folder: bool,
+    db: &r2d2::Pool<r2d2::ConnectionManager<PgConnection>>,
+) -> Directory {
     let paths: fs::ReadDir = fs::read_dir(&folder).unwrap();
     let folder_name: String = fs::canonicalize(&folder)
         .unwrap()
@@ -36,40 +47,41 @@ pub fn index_folder(folder: String, root_folder: bool) -> Directory {
         .to_string();
     let dir_metadata = fs::metadata(&folder).unwrap();
     let modification_time: DateTime<Utc> = dir_metadata.modified().unwrap().into();
-
-    let index: Vec<StorageThing> = paths
-        .into_iter()
-        .map(|path| {
-            let metadata = path.as_ref().unwrap().metadata().unwrap();
-            let modification_time: DateTime<Utc> = metadata.modified().unwrap().into();
-            if !root_folder
-                && !path
-                    .as_ref()
-                    .unwrap()
-                    .path()
-                    .to_str()
-                    .unwrap()
-                    .to_string()
-                    .contains("Animu")
-            {
-                StorageThing::Empty(String::new())
-            } else if metadata.is_dir() {
-                StorageThing::Directory(index_folder(
+    let mut index: Vec<StorageThing> = vec![];
+    for path in paths {
+        let metadata = path.as_ref().unwrap().metadata().unwrap();
+        let modification_time: DateTime<Utc> = metadata.modified().unwrap().into();
+        if !root_folder
+            && !path
+                .as_ref()
+                .unwrap()
+                .path()
+                .to_str()
+                .unwrap()
+                .to_string()
+                .contains("Animu")
+        {
+            index.push(StorageThing::Empty(String::new()))
+        } else if metadata.is_dir() {
+            index.push(StorageThing::Directory(
+                index_folder(
                     path.as_ref().unwrap().path().to_str().unwrap().to_string(),
                     false,
-                ))
-            } else {
-                let file = File {
-                    name: Some(path.as_ref().unwrap().file_name().into_string().unwrap()),
-                    path: Some(path.as_ref().unwrap().path().to_str().unwrap().to_string()),
-                    kind: Some("file".to_string()),
-                    mtime: Some(modification_time.format("%a, %d %b %Y %T %Z").to_string()),
-                    size: Some(metadata.len()),
-                };
-                StorageThing::File(ParsedFile::from_file(file))
-            }
-        })
-        .collect();
+                    db,
+                )
+                .await,
+            ));
+        } else {
+            let file = File {
+                name: Some(path.as_ref().unwrap().file_name().into_string().unwrap()),
+                path: Some(path.as_ref().unwrap().path().to_str().unwrap().to_string()),
+                kind: Some("file".to_string()),
+                mtime: Some(modification_time.format("%a, %d %b %Y %T %Z").to_string()),
+                size: Some(metadata.len()),
+            };
+            index.push(StorageThing::File(ParsedFile::from_file(file, db).await));
+        }
+    }
 
     Directory {
         name: folder_name,
@@ -148,7 +160,7 @@ pub fn dynamic_merge(index: Directory) -> Directory {
 
 pub async fn index_files(state: web::Data<State>) -> impl Responder {
     unsafe {
-        let mut i: Directory = index_folder(state.root_folder.clone(), true);
+        let mut i: Directory = index_folder(state.root_folder.clone(), true, &state.database).await;
         i = flatten_index(flatten_index(i));
         INDEX = Some(dynamic_merge(i));
     }

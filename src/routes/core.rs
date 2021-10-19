@@ -3,27 +3,33 @@ use actix_web::{web, HttpRequest, Responder};
 use crate::helpers::file_sort;
 use crate::structs::{Directory, File, ParsedFile, State, StorageThing};
 use crate::INDEX;
-
+use diesel::prelude::*;
+use diesel::r2d2;
 use serde::Deserialize;
 
-pub fn directory_index_to_files(index: Directory) -> Vec<ParsedFile> {
+pub async fn directory_index_to_files(
+    index: Directory,
+    db: &r2d2::Pool<r2d2::ConnectionManager<PgConnection>>,
+) -> Vec<ParsedFile> {
     let mut files: Vec<ParsedFile> = Vec::new();
-    index.files.into_iter().for_each(|f| match f {
-        StorageThing::Directory(dir) => {
-            let file = File {
-                name: Some(dir.name.clone()),
-                path: Some(dir.name.clone()),
-                kind: Some("directory".to_string()),
-                mtime: dir.mtime,
-                size: None,
-            };
-            files.push(ParsedFile::from_file(file));
+    for f in index.files {
+        match f {
+            StorageThing::Directory(dir) => {
+                let file = File {
+                    name: Some(dir.name.clone()),
+                    path: Some(dir.name.clone()),
+                    kind: Some("directory".to_string()),
+                    mtime: dir.mtime,
+                    size: None,
+                };
+                files.push(ParsedFile::from_file(file, db).await);
+            },
+            StorageThing::File(file) => {
+                files.push(file);
+            },
+            StorageThing::Empty(_) => {}
         }
-        StorageThing::File(file) => {
-            files.push(file);
-        }
-        StorageThing::Empty(_) => {}
-    });
+    }
     files
 }
 
@@ -86,7 +92,7 @@ pub async fn files(req: HttpRequest, state: web::Data<State>) -> impl Responder 
         .replace(&state.base_path, "/");
     unsafe {
         let index = get_path_from_index(INDEX.clone().unwrap(), path, 0);
-        let mut parsed_files = directory_index_to_files(index);
+        let mut parsed_files = directory_index_to_files(index, &state.database).await;
         parsed_files.sort_by(|a, b| file_sort(a, b));
         crate::coolshit::encrypted_json_response(parsed_files, &state.response_secret)
     }
@@ -109,7 +115,7 @@ pub async fn filter_files(data: web::Query<Search>, state: web::Data<State>) -> 
             String::new(),
             data.query.clone(),
         );
-        let mut parsed_files = directory_index_to_files(index);
+        let mut parsed_files = directory_index_to_files(index, &state.database).await;
         parsed_files.sort_by(|a, b| file_sort(a, b));
         crate::coolshit::encrypted_json_response(parsed_files, &state.response_secret)
     }

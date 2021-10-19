@@ -1,7 +1,7 @@
 CREATE TABLE public.storage
 (
     id SERIAL PRIMARY KEY NOT NULL,
-    path VARCHAR NOT NULL,
+    paths TEXT[] NOT NULL,
     name VARCHAR NOT NULL,
     exceptions TEXT[] NOT NULL
 )

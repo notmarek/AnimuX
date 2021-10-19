@@ -37,7 +37,7 @@ table! {
 table! {
     storage (id) {
         id -> Int4,
-        path -> Varchar,
+        paths -> Array<Text>,
         name -> Varchar,
         exceptions -> Array<Text>,
     }

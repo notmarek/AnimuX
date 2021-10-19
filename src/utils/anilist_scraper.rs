@@ -92,7 +92,10 @@ pub async fn get_anime_info(id: u32, client: Option<Client>) -> ALAnimeData {
         .unwrap()
 }
 
-pub async fn search_anime(q: String, client: Option<Client>) -> ALAnimeData {
+pub async fn search_anime(
+    q: String,
+    client: Option<Client>,
+) -> Result<ALAnimeData, String> {
     let client = client.unwrap_or(Client::new());
 
     let query: &str = "query ($q: String) {
@@ -121,13 +124,15 @@ pub async fn search_anime(q: String, client: Option<Client>) -> ALAnimeData {
         }
     }";
     let data = json!({"query": query, "variables": {"q": q}});
-    client
+    match client
         .post("https://graphql.anilist.co/")
         .json(&data)
         .send()
         .await
         .unwrap()
         .json()
-        .await
-        .unwrap()
+        .await {
+          Ok(e) => Ok(e),
+          Err(_) => Err(String::from("not found ig")),
+        }
 }

@@ -4,7 +4,7 @@
 extern crate diesel;
 
 mod database;
-mod googledrive;
+// mod googledrive;
 mod helpers;
 mod mango;
 mod models;
@@ -25,7 +25,7 @@ use routes::admin::dynamic_merge;
 use routes::admin::flatten_index;
 use routes::admin::index_folder;
 use routes::core::*;
-use routes::gdrive::gdrive;
+// use routes::gdrive::gdrive;
 use routes::mal;
 
 use structs::*;
@@ -35,7 +35,7 @@ use std::str::FromStr;
 
 use actix_service::Service;
 use actix_web::{web, App, HttpServer};
-use googledrive::{Drive, GoogleDrive};
+// use googledrive::{Drive, GoogleDrive};
 
 use std::sync::Arc;
 
@@ -69,7 +69,7 @@ async fn main() -> std::io::Result<()> {
     let mut state: State = State {
         app_name: String::from("Animu"),
         base_path: String::new(),
-        drive: None,
+        // drive: None,
         mal_client_id: None,
         mal_secret: None,
         hcaptcha_enabled: false,
@@ -94,7 +94,7 @@ async fn main() -> std::io::Result<()> {
     state.response_secret = env::var("RESPONSE_SECRET").unwrap_or_else(|_| String::from("oifdufhjioashfjkdash"));
     state.root_folder = env::var("ROOT_FOLDER").unwrap_or_else(|_| "/home/pi/Y/Animu/".to_string());
     let hcaptcha_enabled: String = env::var("HCAPTCHA_ENABLED").unwrap_or_default();
-    let drive_enabled: String = env::var("ENABLE_GDRIVE").unwrap_or_default();
+    // let drive_enabled: String = env::var("ENABLE_GDRIVE").unwrap_or_default();
     let mal_enabled: String = env::var("ENABLE_MAL").unwrap_or_default();
     let torrents_enabled: String = env::var("ENABLE_TORRENTS").unwrap_or_default();
     let navidrome_enabled: String = env::var("ENABLE_NAVIDROME").unwrap_or_default();
@@ -166,14 +166,14 @@ async fn main() -> std::io::Result<()> {
             Some(env::var("HCAPTCHA_SECRET").expect("HCAPTCHA_SECRET not found."));
     }
 
-    if is_enabled(&drive_enabled) {
-        println!("Google drive enabled.");
-        let drive_api_key: String = env::var("GDRIVE_API_KEY").expect("GDRIVE_API_KEY not found.");
-        let drive_secret_file: String =
-            env::var("GDRIVE_APP_SECRET").expect("GDRIVE_APP_SECRET not found.");
-        let drive: Drive = Drive::init(&drive_secret_file, &drive_api_key, "drive").await;
-        state.drive = Some(Arc::new(drive));
-    }
+    // if is_enabled(&drive_enabled) {
+    //     println!("Google drive enabled.");
+    //     let drive_api_key: String = env::var("GDRIVE_API_KEY").expect("GDRIVE_API_KEY not found.");
+    //     let drive_secret_file: String =
+    //         env::var("GDRIVE_APP_SECRET").expect("GDRIVE_APP_SECRET not found.");
+    //     let drive: Drive = Drive::init(&drive_secret_file, &drive_api_key, "drive").await;
+    //     state.drive = Some(Arc::new(drive));
+    // }
 
     if is_enabled(&mal_enabled) {
         println!("MAL enabled.");
@@ -186,7 +186,7 @@ async fn main() -> std::io::Result<()> {
     let base_path: String = env::var("BASE_PATH").unwrap_or_else(|_| "/".to_string());
     state.base_path = base_path.clone();
     unsafe {
-        let mut i: Directory = index_folder(state.root_folder.clone(), true);
+        let mut i: Directory = index_folder(state.root_folder.clone(), true, &state.database).await;
         i = flatten_index(flatten_index(i));
         INDEX = Some(dynamic_merge(i));
     }
@@ -279,14 +279,14 @@ async fn main() -> std::io::Result<()> {
                     web::post().to(delete_request),
                 );
         }
-        if is_enabled(&drive_enabled) {
-            app = app
-                .route(&format!("{}GoogleDrive", &base_path), web::get().to(gdrive))
-                .route(
-                    &format!("{}GoogleDrive/{{tail:.*}}", &base_path),
-                    web::get().to(gdrive),
-                );
-        }
+        // if is_enabled(&drive_enabled) {
+        //     app = app
+        //         .route(&format!("{}GoogleDrive", &base_path), web::get().to(gdrive))
+        //         .route(
+        //             &format!("{}GoogleDrive/{{tail:.*}}", &base_path),
+        //             web::get().to(gdrive),
+        //         );
+        // }
         if is_enabled(&rssmission_enabled) {
             app = app
                 .route(

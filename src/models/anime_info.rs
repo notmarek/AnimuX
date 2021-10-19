@@ -1,11 +1,12 @@
 use std::string;
 
 use crate::schema::anime_info;
+use crate::utils::anilist_scraper::AnilistMedia;
 use diesel::prelude::*;
 use diesel::r2d2;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Queryable, Serialize, Deserialize, Default)]
+#[derive(Debug, Queryable, Serialize, Deserialize, Default, Clone)]
 pub struct AnimeInfo {
     pub id: i32,
     pub real_name: String,
@@ -66,37 +67,26 @@ impl AnimeInfo {
     }
 
     pub fn new(
-        name: String,
-        al_id: i32,
-        cover_img: String,
-        banner_img: String,
-        desc: String,
-        eps: i32,
-        preffered: String,
-        english: String,
-        original: String,
-        romanji: String,
-        avg_score: i32,
-        adult: bool,
-        src: String,
+        path: String,
+        al_response: AnilistMedia,
         db: &r2d2::Pool<r2d2::ConnectionManager<PgConnection>>,
     ) -> Self {
         use crate::schema::anime_info::dsl::*;
         let db = db.get().unwrap();
         let entry = NewAnimeInfoEntry {
-            real_name: name,
-            anilist_id: al_id,
-            cover: cover_img,
-            banner: banner_img,
-            description: desc,
-            episodes: eps,
-            title_preffered: preffered,
-            title_english: english,
-            title_original: original,
-            title_romanji: romanji,
-            score: avg_score,
-            is_adult: adult,
-            source_material: src,
+            real_name: path,
+            anilist_id: al_response.id,
+            cover: al_response.cover_image.extra_large,
+            banner: al_response.banner_image.unwrap_or_default(),
+            description: al_response.description,
+            episodes: al_response.episodes,
+            title_preffered: al_response.title.user_preferred,
+            title_english: al_response.title.english,
+            title_original: al_response.title.native,
+            title_romanji: al_response.title.romaji,
+            score: al_response.average_score,
+            is_adult: al_response.is_adult,
+            source_material: al_response.source,
         };
         match diesel::insert_into(anime_info)
             .values(entry)

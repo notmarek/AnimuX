@@ -1,8 +1,9 @@
 use std::sync::Arc;
 
-use crate::googledrive::Drive;
+// use crate::googledrive::Drive;
 use crate::mango::Mango;
 use crate::navidrome::Navidrome;
+use crate::utils::anilist_scraper::search_anime;
 
 use serde::{Deserialize, Serialize};
 
@@ -24,7 +25,7 @@ pub static ANIME: SyncLazy<Vec<AnimeInfo>> = SyncLazy::new(|| {
 pub struct State {
     pub app_name: String,
     pub base_path: String,
-    pub drive: Option<Arc<Drive>>,
+    // pub drive: Option<Arc<Drive>>,
     pub mal_secret: Option<String>,
     pub mal_client_id: Option<String>,
     pub hcaptcha_enabled: bool,
@@ -130,11 +131,11 @@ pub struct ParsedFile {
     pub kind: Option<String>,
     pub mtime: Option<String>,
     pub size: Option<u64>,
-    pub mal_id: Option<u32>,
+    pub anilist_info: Option<crate::models::anime_info::AnimeInfo>,
 }
 
 impl ParsedFile {
-    pub fn from_file(file: File) -> Self {
+    pub async fn from_file(file: File, db: &r2d2::Pool<r2d2::ConnectionManager<PgConnection>>) -> Self {
         let anime_info: Vec<AnimeInfo> = ANIME.clone();
         let parsed_file: ParsedFile;
 
@@ -150,12 +151,22 @@ impl ParsedFile {
                 kind: file.kind,
                 mtime: file.mtime,
                 size: file.size,
-                mal_id: Some(0),
+                anilist_info: None,
             };
         } else {
             let mut anitomy: Anitomy = Anitomy::new();
+            
             match anitomy.parse(file.name.as_ref().unwrap()) {
                 Ok(ref e) | Err(ref e) => {
+                    let info = match crate::models::anime_info::AnimeInfo::get(file.path.clone().unwrap(), db) {
+                        Ok(i) => i,
+                        Err(_) => {
+                            match search_anime(e.get(ElementCategory::AnimeTitle).unwrap_or("").to_string(), None).await {
+                                Ok(e) => { crate::models::anime_info::AnimeInfo::new(file.path.clone().unwrap(), e.data.media, db) },
+                                Err(_) => { crate::models::anime_info::AnimeInfo::new_not_found(file.path.clone().unwrap(), db)},
+                            }
+                        }
+                    };
                     let mal = &anime_info
                         .into_iter()
                         .filter(|ye| {
@@ -179,7 +190,7 @@ impl ParsedFile {
                         kind: file.kind,
                         mtime: file.mtime,
                         size: file.size,
-                        mal_id: mal.get(0).map_or(Some(0), |i| i.mal),
+                        anilist_info: Some(info),
                     }
                 }
             }
