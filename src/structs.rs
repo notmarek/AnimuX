@@ -158,25 +158,28 @@ impl ParsedFile {
             
             match anitomy.parse(file.name.as_ref().unwrap()) {
                 Ok(ref e) | Err(ref e) => {
-                    let info = match crate::models::anime_info::AnimeInfo::get(file.path.clone().unwrap(), db) {
-                        Ok(i) => i,
+                    let anime_name = e.get(ElementCategory::AnimeTitle).unwrap_or("").to_string();
+                    let info = match crate::models::anime_info::AnimeInfo::get(anime_name.clone(), db) {
+                        Ok(i) => { 
+                            i
+                         },
                         Err(_) => {
-                            match search_anime(e.get(ElementCategory::AnimeTitle).unwrap_or("").to_string(), None).await {
-                                Ok(e) => { crate::models::anime_info::AnimeInfo::new(file.path.clone().unwrap(), e.data.media, db) },
-                                Err(_) => { crate::models::anime_info::AnimeInfo::new_not_found(file.path.clone().unwrap(), db)},
+                            match search_anime(anime_name.clone(), None).await {
+                                Ok(e) => { crate::models::anime_info::AnimeInfo::new(anime_name.clone(), e.data.media, db) },
+                                Err(_) => { crate::models::anime_info::AnimeInfo::new_not_found(anime_name.clone(), db)},
                             }
                         }
                     };
-                    let mal = &anime_info
-                        .into_iter()
-                        .filter(|ye| {
-                            ye.name.as_ref().unwrap()
-                                == e.get(ElementCategory::AnimeTitle).unwrap_or("")
-                        })
-                        .collect::<Vec<AnimeInfo>>();
+                    // let mal = &anime_info
+                    //     .into_iter()
+                    //     .filter(|ye| {
+                    //         ye.name.as_ref().unwrap()
+                    //             == e.get(ElementCategory::AnimeTitle).unwrap_or("")
+                    //     })
+                    //     .collect::<Vec<AnimeInfo>>();
                     parsed_file = ParsedFile {
                         name: file.path,
-                        anime: Some(e.get(ElementCategory::AnimeTitle).unwrap_or("").to_string()),
+                        anime: Some(anime_name),
                         group: Some(
                             e.get(ElementCategory::ReleaseGroup)
                                 .unwrap_or("")
