@@ -59,7 +59,7 @@ pub struct NewAnimeInfoEntry {
     pub updated: bool,
 }
 
-#[derive(Insertable)]
+#[derive(Insertable, AsChangeset)]
 #[table_name = "anime_info"]
 pub struct NotFoundAnimeInfoEntry {
     pub real_name: String,
@@ -124,7 +124,7 @@ impl AnimeInfo {
             not_found: false,
             updated: false,
         };
-        match diesel::update(&FindById { id: self.id }).set(entry).get_result::<Self>(&db) {
+        match diesel::update(&self).set(entry).get_result::<Self>(&db) {
             Ok(u) => u,
             _ => Self::default(),
         }
@@ -158,6 +158,21 @@ impl AnimeInfo {
             .values(entry)
             .get_result::<Self>(&db)
         {
+            Ok(u) => u,
+            _ => Self::default(),
+        }
+    }
+
+    pub fn change_to_not_found(
+        self,
+        db: &r2d2::Pool<r2d2::ConnectionManager<PgConnection>>,
+    ) -> Self {
+        let db = db.get().unwrap();
+        let entry = NotFoundAnimeInfoEntry {
+            real_name: self.real_name.clone(),
+            not_found: true,
+        };
+        match diesel::update(&self).set(entry).get_result::<Self>(&db) {
             Ok(u) => u,
             _ => Self::default(),
         }

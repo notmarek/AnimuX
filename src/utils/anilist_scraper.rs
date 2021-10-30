@@ -55,31 +55,31 @@ pub struct ALAnimeData {
 pub async fn get_anime_info(id: i32, client: Option<Client>) -> Result<ALAnimeData, String> {
     let client = client.unwrap_or_default();
 
-    let query: &str = "query ($id: Int) {
-        Media (id: $id, type: ANIME) {
-          id
-          title {
-            userPreferred
-            romaji
-            english
-            native
+      let query: &str = "query ($id: Int) {
+          Media (id: $id, type: ANIME) {
+            id
+            title {
+              userPreferred
+              romaji
+              english
+              native
+            }
+            description
+            episodes
+            streamingEpisodes {
+              thumbnail
+              title
+            }
+            source
+            bannerImage
+            coverImage {
+              extraLarge
+              color
+            }
+            averageScore
+            isAdult
           }
-          description
-          episodes
-          streamingEpisodes {
-            thumbnail
-            title
-          }
-          source
-          bannerImage
-          coverImage {
-            extraLarge
-            color
-          }
-          averageScore
-          isAdult
-        }
-    }";
+      }";
     let data = json!({"query": query, "variables": {"id": id}});
     match client
         .post("https://graphql.anilist.co/")
@@ -91,7 +91,7 @@ pub async fn get_anime_info(id: i32, client: Option<Client>) -> Result<ALAnimeDa
         .await
     {
         Ok(e) => Ok(e),
-        Err(_) => Err(String::from("not found ig")),
+        Err(e) => Err(e.to_string()),
     }
 }
 

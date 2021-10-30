@@ -133,7 +133,10 @@ pub struct ParsedFile {
 }
 
 impl ParsedFile {
-    pub async fn from_file(file: File, db: &r2d2::Pool<r2d2::ConnectionManager<PgConnection>>) -> Self {
+    pub async fn from_file(
+        file: File,
+        db: &r2d2::Pool<r2d2::ConnectionManager<PgConnection>>,
+    ) -> Self {
         // let anime_info: Vec<AnimeInfo> = ANIME.clone();
         let parsed_file: ParsedFile;
 
@@ -153,28 +156,37 @@ impl ParsedFile {
             };
         } else {
             let mut anitomy: Anitomy = Anitomy::new();
-            
+
             match anitomy.parse(file.name.as_ref().unwrap()) {
                 Ok(ref e) | Err(ref e) => {
                     let anime_name = e.get(ElementCategory::AnimeTitle).unwrap_or("").to_string();
-                    let info = match crate::models::anime_info::AnimeInfo::get(anime_name.clone(), db) {
-                        Ok(i) => { 
-                            if i.updated {
-                                match get_anime_info(i.anilist_id.unwrap(), None).await {
-                                    Ok(e) => { i.update(e.data.media, db) },
-                                    Err(_) => { crate::models::anime_info::AnimeInfo::new_not_found(anime_name.clone(), db) },
+                    let info =
+                        match crate::models::anime_info::AnimeInfo::get(anime_name.clone(), db) {
+                            Ok(i) => {
+                                if i.updated {
+                                    match get_anime_info(i.anilist_id.unwrap(), None).await {
+                                        Ok(e) => i.update(e.data.media, db),
+                                        Err(e) => {
+                                            println!("{}", e);
+                                            i.change_to_not_found(db)
+                                        }
+                                    }
+                                } else {
+                                    i
                                 }
-                            } else {
-                                i
                             }
-                        },
-                        Err(_) => {
-                            match search_anime(anime_name.clone(), None).await {
-                                Ok(e) => { crate::models::anime_info::AnimeInfo::new(anime_name.clone(), e.data.media, db) },
-                                Err(_) => { crate::models::anime_info::AnimeInfo::new_not_found(anime_name.clone(), db)},
-                            }
-                        }
-                    };
+                            Err(_) => match search_anime(anime_name.clone(), None).await {
+                                Ok(e) => crate::models::anime_info::AnimeInfo::new(
+                                    anime_name.clone(),
+                                    e.data.media,
+                                    db,
+                                ),
+                                Err(_) => crate::models::anime_info::AnimeInfo::new_not_found(
+                                    anime_name.clone(),
+                                    db,
+                                ),
+                            },
+                        };
                     // let mal = &anime_info
                     //     .into_iter()
                     //     .filter(|ye| {
