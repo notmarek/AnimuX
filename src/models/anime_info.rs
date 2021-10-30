@@ -64,6 +64,8 @@ pub struct NewAnimeInfoEntry {
 pub struct NotFoundAnimeInfoEntry {
     pub real_name: String,
     pub not_found: bool,
+    pub updated: bool,
+
 }
 
 impl AnimeInfo {
@@ -171,6 +173,8 @@ impl AnimeInfo {
         let entry = NotFoundAnimeInfoEntry {
             real_name: self.real_name.clone(),
             not_found: true,
+            updated: false,
+
         };
         match diesel::update(&self).set(entry).get_result::<Self>(&db) {
             Ok(u) => u,
@@ -187,6 +191,7 @@ impl AnimeInfo {
         let entry = NotFoundAnimeInfoEntry {
             real_name: name,
             not_found: true,
+            updated: false,
         };
         match diesel::insert_into(anime_info)
             .values(entry)
