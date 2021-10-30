@@ -5,7 +5,7 @@ use crate::structs::{Directory, File, ParsedFile, State, StorageThing};
 use crate::INDEX;
 use diesel::prelude::*;
 use diesel::r2d2;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 pub async fn directory_index_to_files(
     index: Directory,
@@ -81,6 +81,11 @@ pub fn search_dir(
     });
     new_index
 }
+#[derive(Debug, Serialize)]
+pub struct Enchanced {
+    pub current: ParsedFile,
+    pub index: Vec<ParsedFile>,
+}
 
 pub async fn files(req: HttpRequest, state: web::Data<State>) -> impl Responder {
     let path = req
@@ -92,9 +97,17 @@ pub async fn files(req: HttpRequest, state: web::Data<State>) -> impl Responder 
         .replace(&state.base_path, "/");
     unsafe {
         let index = get_path_from_index(INDEX.clone().unwrap(), path, 0);
+        let file = File {
+            name: Some(index.clone().name),
+            path: Some(index.clone().name),
+            kind: Some("directory".to_string()),
+            mtime: index.clone().mtime,
+            size: None,
+        };
+        let current = ParsedFile::from_file(file, &state.database).await;
         let mut parsed_files = directory_index_to_files(index, &state.database).await;
         parsed_files.sort_by(|a, b| file_sort(a, b));
-        crate::coolshit::encrypted_json_response(parsed_files, &state.response_secret)
+        crate::coolshit::encrypted_json_response(Enchanced { current, index: parsed_files }, &state.response_secret)
     }
 }
 #[derive(Deserialize)]

@@ -1,8 +1,6 @@
-use std::sync::Arc;
-
-// use crate::googledrive::Drive;
 use crate::mango::Mango;
 use crate::navidrome::Navidrome;
+use crate::utils::anilist_scraper::get_anime_info;
 use crate::utils::anilist_scraper::search_anime;
 
 use serde::{Deserialize, Serialize};
@@ -136,7 +134,7 @@ pub struct ParsedFile {
 
 impl ParsedFile {
     pub async fn from_file(file: File, db: &r2d2::Pool<r2d2::ConnectionManager<PgConnection>>) -> Self {
-        let anime_info: Vec<AnimeInfo> = ANIME.clone();
+        // let anime_info: Vec<AnimeInfo> = ANIME.clone();
         let parsed_file: ParsedFile;
 
         if file.kind.as_ref().unwrap() == "file"
@@ -161,8 +159,15 @@ impl ParsedFile {
                     let anime_name = e.get(ElementCategory::AnimeTitle).unwrap_or("").to_string();
                     let info = match crate::models::anime_info::AnimeInfo::get(anime_name.clone(), db) {
                         Ok(i) => { 
-                            i
-                         },
+                            if i.updated {
+                                match get_anime_info(i.anilist_id.clone().unwrap(), None).await {
+                                    Ok(e) => { i.update(e.data.media, db) },
+                                    Err(_) => { crate::models::anime_info::AnimeInfo::new_not_found(anime_name.clone(), db) },
+                                }
+                            } else {
+                                i
+                            }
+                        },
                         Err(_) => {
                             match search_anime(anime_name.clone(), None).await {
                                 Ok(e) => { crate::models::anime_info::AnimeInfo::new(anime_name.clone(), e.data.media, db) },

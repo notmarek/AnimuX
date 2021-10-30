@@ -1,0 +1,2 @@
+ALTER TABLE public.anime_info
+ADD COLUMN updated BOOLEAN NOT NULL DEFAULT FALSE

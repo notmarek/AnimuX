@@ -52,36 +52,36 @@ pub struct AnilistAnimeInfo {
 pub struct ALAnimeData {
     pub data: AnilistAnimeInfo,
 }
-pub async fn get_anime_info(id: u32, client: Option<Client>) -> ALAnimeData {
+pub async fn get_anime_info(id: i32, client: Option<Client>) -> Result<ALAnimeData, String> {
     let client = client.unwrap_or(Client::new());
 
     let query: &str = "query ($id: Int) {
         Media (id: $id, type: ANIME) {
-            id
-            title {
-              userPreferred
-              romaji
-              english
-              native
-            }
-            description
-            episodes
-            streamingEpisodes {
-              thumbnail
-              title
-            }
-            source
-            bannerImage
-            coverImage {
-                extraLarge
-                color
-            }
-            averageScore
-            isAdult		
+          id
+          title {
+            userPreferred
+            romaji
+            english
+            native
+          }
+          description
+          episodes
+          streamingEpisodes {
+            thumbnail
+            title
+          }
+          source
+          bannerImage
+          coverImage {
+            extraLarge
+            color
+          }
+          averageScore
+          isAdult
         }
     }";
     let data = json!({"query": query, "variables": {"id": id}});
-    client
+    match client
         .post("https://graphql.anilist.co/")
         .json(&data)
         .send()
@@ -89,13 +89,13 @@ pub async fn get_anime_info(id: u32, client: Option<Client>) -> ALAnimeData {
         .unwrap()
         .json()
         .await
-        .unwrap()
+    {
+        Ok(e) => Ok(e),
+        Err(_) => Err(String::from("not found ig")),
+    }
 }
 
-pub async fn search_anime(
-    q: String,
-    client: Option<Client>,
-) -> Result<ALAnimeData, String> {
+pub async fn search_anime(q: String, client: Option<Client>) -> Result<ALAnimeData, String> {
     let client = client.unwrap_or(Client::new());
 
     let query: &str = "query ($q: String) {
@@ -131,8 +131,9 @@ pub async fn search_anime(
         .await
         .unwrap()
         .json()
-        .await {
-          Ok(e) => Ok(e),
-          Err(_) => Err(String::from("not found ig")),
-        }
+        .await
+    {
+        Ok(e) => Ok(e),
+        Err(_) => Err(String::from("not found ig")),
+    }
 }

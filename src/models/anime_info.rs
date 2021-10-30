@@ -1,12 +1,11 @@
-use std::string;
-
 use crate::schema::anime_info;
 use crate::utils::anilist_scraper::AnilistMedia;
 use diesel::prelude::*;
 use diesel::r2d2;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Queryable, Serialize, Deserialize, Default, Clone)]
+#[derive(Debug, Queryable, Serialize, Deserialize, Default, Clone, Identifiable)]
+#[table_name = "anime_info"]
 pub struct AnimeInfo {
     pub id: i32,
     pub real_name: String,
@@ -23,9 +22,10 @@ pub struct AnimeInfo {
     pub is_adult: Option<bool>,
     pub source_material: Option<String>,
     pub not_found: bool,
+    pub updated: bool,
 }
 
-#[derive(Insertable)]
+#[derive(Insertable, AsChangeset)]
 #[table_name = "anime_info"]
 pub struct NewAnimeInfoEntry {
     pub real_name: String,
@@ -41,6 +41,7 @@ pub struct NewAnimeInfoEntry {
     pub score: i32,
     pub is_adult: bool,
     pub source_material: String,
+    pub not_found: bool,
 }
 
 #[derive(Insertable)]
@@ -57,12 +58,37 @@ impl AnimeInfo {
     ) -> Result<Self, String> {
         use crate::schema::anime_info::dsl::*;
         let db = db.get().unwrap();
-        match anime_info
-            .filter(real_name.eq(&name))
-            .first::<Self>(&db)
-        {
+        match anime_info.filter(real_name.eq(&name)).first::<Self>(&db) {
             Ok(e) => Ok(e),
             Err(_) => Err(String::from("Anime not found.")),
+        }
+    }
+
+    pub fn update(
+        self,
+        al_response: AnilistMedia,
+        db: &r2d2::Pool<r2d2::ConnectionManager<PgConnection>>,
+    ) -> Self {
+        let db = db.get().unwrap();
+        let entry = NewAnimeInfoEntry {
+            real_name: self.real_name.clone(),
+            anilist_id: al_response.id,
+            cover: al_response.cover_image.extra_large,
+            banner: al_response.banner_image.unwrap_or_default(),
+            description: al_response.description,
+            episodes: al_response.episodes,
+            title_preffered: al_response.title.user_preferred,
+            title_english: al_response.title.english,
+            title_original: al_response.title.native,
+            title_romanji: al_response.title.romaji,
+            score: al_response.average_score,
+            is_adult: al_response.is_adult,
+            source_material: al_response.source,
+            not_found: false,
+        };
+        match diesel::update(&self).set(entry).get_result::<Self>(&db) {
+            Ok(u) => u,
+            _ => Self::default(),
         }
     }
 
@@ -87,6 +113,7 @@ impl AnimeInfo {
             score: al_response.average_score,
             is_adult: al_response.is_adult,
             source_material: al_response.source,
+            not_found: false,
         };
         match diesel::insert_into(anime_info)
             .values(entry)

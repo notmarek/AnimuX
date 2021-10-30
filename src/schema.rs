@@ -15,6 +15,7 @@ table! {
         is_adult -> Nullable<Bool>,
         source_material -> Nullable<Varchar>,
         not_found -> Bool,
+        updated -> Bool,
     }
 }
 

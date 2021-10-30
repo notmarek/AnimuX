@@ -25,7 +25,6 @@ use routes::admin::dynamic_merge;
 use routes::admin::flatten_index;
 use routes::admin::index_folder;
 use routes::core::*;
-// use routes::gdrive::gdrive;
 use routes::mal;
 
 use structs::*;
@@ -35,9 +34,6 @@ use std::str::FromStr;
 
 use actix_service::Service;
 use actix_web::{web, App, HttpServer};
-// use googledrive::{Drive, GoogleDrive};
-
-use std::sync::Arc;
 
 use crate::models::user::User;
 use crate::routes::admin::create_invite;
