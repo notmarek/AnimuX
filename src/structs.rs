@@ -160,7 +160,7 @@ impl ParsedFile {
                     let info = match crate::models::anime_info::AnimeInfo::get(anime_name.clone(), db) {
                         Ok(i) => { 
                             if i.updated {
-                                match get_anime_info(i.anilist_id.clone().unwrap(), None).await {
+                                match get_anime_info(i.anilist_id.unwrap(), None).await {
                                     Ok(e) => { i.update(e.data.media, db) },
                                     Err(_) => { crate::models::anime_info::AnimeInfo::new_not_found(anime_name.clone(), db) },
                                 }

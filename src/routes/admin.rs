@@ -1,14 +1,15 @@
 use actix_web::{web, HttpResponse, Responder};
 
-use std::fs;
 use async_recursion::async_recursion;
 use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use diesel::r2d2;
+use std::fs;
 
-// use crate::models::storage::Storage;
+use crate::models::anime_info::AnimeInfo;
 use crate::structs::{Directory, File, ParsedFile, Response, State, StorageThing};
 use crate::INDEX;
+use serde::Deserialize;
 
 use crate::models::invites::Invite;
 
@@ -29,6 +30,30 @@ pub async fn get_all_invites(state: web::Data<State>) -> impl Responder {
         },
         &state.response_secret,
     )
+}
+
+pub async fn get_all_anime_entries(state: web::Data<State>) -> impl Responder {
+    let anime: Vec<AnimeInfo> = AnimeInfo::get_all(&state.database);
+    crate::coolshit::encrypted_json_response(
+        Response {
+            status: String::from("success"),
+            data: anime,
+        },
+        &state.response_secret,
+    )
+}
+
+#[derive(Deserialize)]
+pub struct UpdateAlidReq {
+    pub id: i32,
+    pub alid: i32,
+}
+pub async fn update_anime_alid(
+    update: web::Json<UpdateAlidReq>,
+    state: web::Data<State>,
+) -> impl Responder {
+    AnimeInfo::update_alid(update.id, update.alid, &state.database);
+    crate::coolshit::encrypted_json_response("done", &state.response_secret)
 }
 
 #[async_recursion(?Send)]

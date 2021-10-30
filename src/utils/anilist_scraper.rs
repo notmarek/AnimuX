@@ -53,7 +53,7 @@ pub struct ALAnimeData {
     pub data: AnilistAnimeInfo,
 }
 pub async fn get_anime_info(id: i32, client: Option<Client>) -> Result<ALAnimeData, String> {
-    let client = client.unwrap_or(Client::new());
+    let client = client.unwrap_or_default();
 
     let query: &str = "query ($id: Int) {
         Media (id: $id, type: ANIME) {
@@ -96,7 +96,7 @@ pub async fn get_anime_info(id: i32, client: Option<Client>) -> Result<ALAnimeDa
 }
 
 pub async fn search_anime(q: String, client: Option<Client>) -> Result<ALAnimeData, String> {
-    let client = client.unwrap_or(Client::new());
+    let client = client.unwrap_or_default();
 
     let query: &str = "query ($q: String) {
         Media(type: ANIME, search: $q) {

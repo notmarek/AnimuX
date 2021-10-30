@@ -5,6 +5,7 @@ extern crate diesel;
 
 mod database;
 // mod googledrive;
+mod coolshit;
 mod helpers;
 mod mango;
 mod models;
@@ -12,7 +13,6 @@ mod navidrome;
 mod routes;
 mod schema;
 mod structs;
-mod coolshit;
 mod utils;
 use actix_web::HttpResponse;
 
@@ -37,15 +37,17 @@ use actix_web::{web, App, HttpServer};
 
 use crate::models::user::User;
 use crate::routes::admin::create_invite;
+use crate::routes::admin::get_all_anime_entries;
 use crate::routes::admin::get_all_invites;
 use crate::routes::admin::index_files;
+use crate::routes::admin::update_anime_alid;
 use crate::routes::images::upload;
 use crate::routes::requests::approve_request;
 use crate::routes::requests::delete_request;
 use crate::routes::requests::request_torrent;
 use crate::routes::requests::show_all_requests;
-use crate::routes::rssmission::current_cfg;
 use crate::routes::rssmission::add_matcher;
+use crate::routes::rssmission::current_cfg;
 use crate::routes::rssmission::remove_matcher;
 use crate::routes::user::all_users;
 use crate::routes::user::check_token;
@@ -87,7 +89,8 @@ async fn main() -> std::io::Result<()> {
     };
     let address: String = env::var("ADDRESS").unwrap_or_else(|_| String::from("127.0.0.1"));
     let port: String = env::var("PORT").unwrap_or_else(|_| String::from("8080"));
-    state.response_secret = env::var("RESPONSE_SECRET").unwrap_or_else(|_| String::from("oifdufhjioashfjkdash"));
+    state.response_secret =
+        env::var("RESPONSE_SECRET").unwrap_or_else(|_| String::from("oifdufhjioashfjkdash"));
     state.root_folder = env::var("ROOT_FOLDER").unwrap_or_else(|_| "/home/pi/Y/Animu/".to_string());
     let hcaptcha_enabled: String = env::var("HCAPTCHA_ENABLED").unwrap_or_default();
     // let drive_enabled: String = env::var("ENABLE_GDRIVE").unwrap_or_default();
@@ -351,6 +354,14 @@ async fn main() -> std::io::Result<()> {
                 web::post().to(create_invite),
             )
             .route(
+                &format!("{}admin/anime/update", &base_path),
+                web::post().to(update_anime_alid),
+            )
+            .route(
+                &format!("{}admin/anime", &base_path),
+                web::get().to(get_all_anime_entries),
+            )
+            .route(
                 &format!("{}admin/invites", &base_path),
                 web::get().to(get_all_invites),
             )
@@ -358,7 +369,8 @@ async fn main() -> std::io::Result<()> {
             .route(
                 &format!("{}search", &base_path),
                 web::get().to(filter_files),
-            ).route(
+            )
+            .route(
                 &format!("{}test", &base_path),
                 web::get().to(routes::test::test_search),
             ) // Default route

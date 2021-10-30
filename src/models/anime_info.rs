@@ -25,6 +25,20 @@ pub struct AnimeInfo {
     pub updated: bool,
 }
 
+#[derive(AsChangeset)]
+#[table_name = "anime_info"]
+pub struct UpdatedAnilistId {
+    pub anilist_id: i32,
+    pub updated: bool,
+    pub not_found: bool,
+}
+
+#[derive(Identifiable)]
+#[table_name = "anime_info"]
+pub struct FindById {
+    pub id: i32,
+}
+
 #[derive(Insertable, AsChangeset)]
 #[table_name = "anime_info"]
 pub struct NewAnimeInfoEntry {
@@ -42,6 +56,7 @@ pub struct NewAnimeInfoEntry {
     pub is_adult: bool,
     pub source_material: String,
     pub not_found: bool,
+    pub updated: bool,
 }
 
 #[derive(Insertable)]
@@ -62,6 +77,28 @@ impl AnimeInfo {
             Ok(e) => Ok(e),
             Err(_) => Err(String::from("Anime not found.")),
         }
+    }
+
+    pub fn get_all(pool: &r2d2::Pool<r2d2::ConnectionManager<PgConnection>>) -> Vec<Self> {
+        use crate::schema::anime_info::dsl::*;
+        let db = pool.get().unwrap();
+        anime_info.get_results::<Self>(&db).unwrap()
+    }
+
+    pub fn update_alid(
+        real_id: i32,
+        al_id: i32,
+        db: &r2d2::Pool<r2d2::ConnectionManager<PgConnection>>,
+    ) {
+        let db = db.get().unwrap();
+        diesel::update(&FindById { id: real_id })
+            .set(UpdatedAnilistId {
+                anilist_id: al_id,
+                updated: true,
+                not_found: false,
+            })
+            .execute(&db)
+            .unwrap();
     }
 
     pub fn update(
@@ -85,6 +122,7 @@ impl AnimeInfo {
             is_adult: al_response.is_adult,
             source_material: al_response.source,
             not_found: false,
+            updated: false,
         };
         match diesel::update(&self).set(entry).get_result::<Self>(&db) {
             Ok(u) => u,
@@ -114,6 +152,7 @@ impl AnimeInfo {
             is_adult: al_response.is_adult,
             source_material: al_response.source,
             not_found: false,
+            updated: false,
         };
         match diesel::insert_into(anime_info)
             .values(entry)
