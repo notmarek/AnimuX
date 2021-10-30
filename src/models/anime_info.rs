@@ -124,7 +124,7 @@ impl AnimeInfo {
             not_found: false,
             updated: false,
         };
-        match diesel::update(&self).set(entry).get_result::<Self>(&db) {
+        match diesel::update(&FindById { id: self.id }).set(entry).get_result::<Self>(&db) {
             Ok(u) => u,
             _ => Self::default(),
         }
