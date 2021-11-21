@@ -36,6 +36,14 @@ table! {
 }
 
 table! {
+    stars (id) {
+        id -> Int4,
+        user_id -> Int4,
+        path -> Text,
+    }
+}
+
+table! {
     storage (id) {
         id -> Int4,
         paths -> Array<Text>,
@@ -68,6 +76,7 @@ allow_tables_to_appear_in_same_query!(
     anime_info,
     invites,
     naughty,
+    stars,
     storage,
     torrent_queue,
     users,
