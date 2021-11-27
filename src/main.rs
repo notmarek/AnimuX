@@ -337,7 +337,7 @@ async fn main() -> std::io::Result<()> {
             .route(&format!("{}stars/create", &base_path), web::post().to(star))
             .route(
                 &format!("{}stars/remove", &base_path),
-                web::get().to(unstar),
+                web::post().to(unstar),
             )
             .route(
                 &format!("{}user/register", &base_path),
