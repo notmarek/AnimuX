@@ -26,10 +26,40 @@ impl Star {
         use crate::schema::stars::dsl::*;
 
         let db = db.get().unwrap();
-        match stars.filter(user_id.eq(&uid)).get_results::<Self>(&sb) {
+        match stars.filter(user_id.eq(&uid)).get_results::<Self>(&db) {
             Ok(i) => Ok(i),
             Err(_) => Err(vec![]),
         }
+    }
+
+    pub fn get(
+        uid: i32,
+        p: String,
+        db: &r2d2::Pool<r2d2::ConnectionManager<PgConnection>>,
+    ) -> Self {
+        use crate::schema::stars::dsl::*;
+
+        let db = db.get().unwrap();
+        match stars
+            .filter(user_id.eq(&uid))
+            .filter(path.eq(&p))
+            .get_result::<Self>(&db)
+        {
+            Ok(i) => i,
+            Err(_) => Self {
+                id: 0,
+                user_id: 0,
+                path: String::new(),
+            },
+        }
+    }
+
+    pub fn remove(uid: i32, p: String, db: &r2d2::Pool<r2d2::ConnectionManager<PgConnection>>) {
+        use crate::schema::stars::dsl::*;
+        let db = db.get().unwrap();
+        diesel::delete(stars.filter(user_id.eq(&uid)).filter(path.eq(&p)))
+            .execute(&db)
+            .unwrap();
     }
 
     pub fn new(
@@ -38,6 +68,10 @@ impl Star {
         db: &r2d2::Pool<r2d2::ConnectionManager<PgConnection>>,
     ) -> Self {
         use crate::schema::stars::dsl::*;
+        let exists = Self::get(uid, p.clone(), db);
+        if exists.id != 0 {
+            return exists;
+        };
         let db = db.get().unwrap();
         match diesel::insert_into(stars)
             .values(NewStar {

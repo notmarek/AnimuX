@@ -27,6 +27,7 @@ use routes::admin::index_folder;
 use routes::core::*;
 use routes::mal;
 
+use routes::star::{star, stars, unstar};
 use structs::*;
 
 use std::env;
@@ -332,6 +333,12 @@ async fn main() -> std::io::Result<()> {
             )
         }
         app = app
+            .route(&format!("{}stars", &base_path), web::get().to(stars))
+            .route(&format!("{}stars/create", &base_path), web::post().to(star))
+            .route(
+                &format!("{}stars/remove", &base_path),
+                web::get().to(unstar),
+            )
             .route(
                 &format!("{}user/register", &base_path),
                 web::post().to(register),
