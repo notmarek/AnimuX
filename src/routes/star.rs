@@ -26,10 +26,13 @@ pub async fn star(
     )
     .unwrap();
     Star::new(user.id, data.path.clone(), &state.database);
-    HttpResponse::Ok().json(Response {
-        status: String::from("success"),
-        data: "star created",
-    })
+    crate::coolshit::encrypted_json_response(
+        Response {
+            status: String::from("success"),
+            data: "star created",
+        },
+        &state.response_secret,
+    )
 }
 
 pub async fn unstar(
@@ -49,10 +52,13 @@ pub async fn unstar(
     )
     .unwrap();
     Star::remove(user.id, data.path.clone(), &state.database);
-    HttpResponse::Ok().json(Response {
-        status: String::from("success"),
-        data: "star removed",
-    })
+    crate::coolshit::encrypted_json_response(
+        Response {
+            status: String::from("success"),
+            data: "star removed",
+        },
+        &state.response_secret,
+    )
 }
 
 pub async fn stars(req: HttpRequest, state: web::Data<State>) -> impl Responder {
@@ -67,8 +73,11 @@ pub async fn stars(req: HttpRequest, state: web::Data<State>) -> impl Responder 
         &state.database,
     )
     .unwrap();
-    HttpResponse::Ok().json(Response {
-        status: String::from("success"),
-        data: Star::get_by_uid(user.id, &state.database),
-    })
+    crate::coolshit::encrypted_json_response(
+        Response {
+            status: String::from("success"),
+            data: Star::get_by_uid(user.id, &state.database),
+        },
+        &state.response_secret,
+    )
 }
