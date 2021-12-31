@@ -102,7 +102,7 @@ pub async fn malanime(data: web::Json<MALAnime>) -> impl Responder {
 pub async fn malurl() -> impl Responder {
     let code_verify = pkce::code_verifier(128);
     let code_challenge = pkce::code_challenge(&code_verify);
-    HttpResponse::Found().with_header(("Location", format!("https://myanimelist.net/v1/oauth2/authorize?response_type=code&client_id=0e16733a4d9bbf1152fa9cb2ada84048&code_challenge={}&state={}", code_challenge, code_challenge)))
+    HttpResponse::Found().customize().insert_header(("Location", format!("https://myanimelist.net/v1/oauth2/authorize?response_type=code&client_id=0e16733a4d9bbf1152fa9cb2ada84048&code_challenge={}&state={}", code_challenge, code_challenge)))
 }
 
 // //#[get("/map")]

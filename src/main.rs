@@ -16,7 +16,7 @@ mod structs;
 mod utils;
 use actix_web::HttpResponse;
 
-use actix_web::http::HeaderName;
+use actix_web::http::header::HeaderName;
 use actix_web::web::Data;
 use http::HeaderValue;
 use mango::Mango;
