@@ -1,7 +1,7 @@
 use crate::models::stars::Star;
 use crate::models::user::User;
 use crate::structs::{Response, State};
-use actix_web::{web, HttpRequest, HttpResponse, Responder};
+use actix_web::{web, HttpRequest, Responder};
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]

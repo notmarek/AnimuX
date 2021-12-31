@@ -1,5 +1,4 @@
-use actix_web::{web, HttpRequest, Responder};
-
+use actix_web::{web, HttpRequest, HttpResponse, Responder};
 use crate::helpers::file_sort;
 use crate::structs::{Directory, File, ParsedFile, State, StorageThing};
 use crate::INDEX;
@@ -23,14 +22,31 @@ pub async fn directory_index_to_files(
                     size: None,
                 };
                 files.push(ParsedFile::from_file(file, db).await);
-            },
+            }
             StorageThing::File(file) => {
                 files.push(file);
-            },
+            }
             StorageThing::Empty(_) => {}
         }
     }
     files
+}
+
+pub async fn directory_index_to_playlist(
+    index: Directory,
+) -> Vec<String> {
+    let mut playlist: Vec<String> = vec![String::from("#EXTM3U"), format!("#PLAYLIST:{}", index.name)];
+    for f in index.files {
+        match f {
+            StorageThing::Directory(_) => {},
+            StorageThing::File(file) => {
+                playlist.push(format!("#EXTINF:0, [{}] {} - Episode {}", file.group.unwrap_or_default(), file.anime.unwrap_or_default(), file.episode.unwrap_or_default()));
+                playlist.push(format!("[HOST]/{}", file.name.unwrap_or_default()));
+            }
+            StorageThing::Empty(_) => {}
+        }
+    }
+    playlist
 }
 
 pub fn get_path_from_index(index: Directory, path: String, iteration: u8) -> Directory {
@@ -107,9 +123,34 @@ pub async fn files(req: HttpRequest, state: web::Data<State>) -> impl Responder 
         let current = ParsedFile::from_file(file, &state.database).await;
         let mut parsed_files = directory_index_to_files(index, &state.database).await;
         parsed_files.sort_by(|a, b| file_sort(a, b));
-        crate::coolshit::encrypted_json_response(Enchanced { current, index: parsed_files }, &state.response_secret)
+        crate::coolshit::encrypted_json_response(
+            Enchanced {
+                current,
+                index: parsed_files,
+            },
+            &state.response_secret,
+        )
     }
 }
+
+pub async fn playlist(req: HttpRequest, state: web::Data<State>) -> impl Responder {
+    let path = req
+        .match_info()
+        .get("tail")
+        .unwrap()
+        .parse::<String>()
+        .unwrap()
+        .replace(&state.base_path, "/");
+    let index = unsafe {
+        get_path_from_index(INDEX.clone().unwrap(), path, 0)
+    };
+    let playlist: Vec<String> = directory_index_to_playlist(index).await.iter().map(|f| {
+        f.replace("[HOST]", req.uri().host().unwrap_or_default())
+    }).collect();
+    let m3u = playlist.join("\n");
+    HttpResponse::Ok().body(m3u)
+}
+
 #[derive(Deserialize)]
 pub struct Search {
     #[serde(rename = "q")]
