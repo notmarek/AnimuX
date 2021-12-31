@@ -34,3 +34,4 @@ mime-db = "1.4.0"
 transmission-rpc = "0.3"
 async-recursion = "0.3.2"
 uuid = { version = "0.8", features = ["v4"] }
+qstring = "0.7.2"

@@ -55,6 +55,8 @@ use crate::routes::user::check_token;
 use crate::routes::user::login;
 use crate::routes::user::register;
 
+use qstring::QString;
+
 static mut INDEX: Option<Directory> = None;
 
 fn is_enabled(name: &str) -> bool {
@@ -225,7 +227,7 @@ async fn main() -> std::io::Result<()> {
                         original = true;
                     }
                 }
-            } else if let Some(token) = req.match_info().get("t") {
+            } else if let Some(token) = QString::from(req.query_string()).get("t") {
                 if let Ok(user) =
                     User::from_token(String::from(token), st.secret.clone(), &st.database)
                 {
