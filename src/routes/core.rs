@@ -5,6 +5,7 @@ use crate::INDEX;
 use diesel::prelude::*;
 use diesel::r2d2;
 use serde::{Deserialize, Serialize};
+use qstring::QString;
 
 pub async fn directory_index_to_files(
     index: Directory,
@@ -34,6 +35,8 @@ pub async fn directory_index_to_files(
 
 pub async fn directory_index_to_playlist(
     index: Directory,
+    token: &str,
+    hostname: &str,
 ) -> Vec<String> {
     let mut playlist: Vec<String> = vec![String::from("#EXTM3U"), format!("#PLAYLIST:{}", index.name)];
     for f in index.files {
@@ -41,7 +44,7 @@ pub async fn directory_index_to_playlist(
             StorageThing::Directory(_) => {},
             StorageThing::File(file) => {
                 playlist.push(format!("#EXTINF:0, [{}] {} - Episode {}", file.group.unwrap_or_default(), file.anime.unwrap_or_default(), file.episode.unwrap_or_default()));
-                playlist.push(format!("[HOST]/{}", file.name.unwrap_or_default()));
+                playlist.push(format!("{}/{}?t={}", hostname, file.name.unwrap_or_default(), token));
             }
             StorageThing::Empty(_) => {}
         }
@@ -141,12 +144,13 @@ pub async fn playlist(req: HttpRequest, state: web::Data<State>) -> impl Respond
         .parse::<String>()
         .unwrap()
         .replace(&state.base_path, "/");
+    let qp =  QString::from(req.query_string());
+    let token = qp.get("t").unwrap();
+    let hostname = qp.get("host").unwrap();
     let index = unsafe {
         get_path_from_index(INDEX.clone().unwrap(), path, 0)
     };
-    let playlist: Vec<String> = directory_index_to_playlist(index).await.iter().map(|f| {
-        f.replace("[HOST]", req.uri().host().unwrap_or_default())
-    }).collect();
+    let playlist: Vec<String> = directory_index_to_playlist(index, token, hostname).await;
     let m3u = playlist.join("\n");
     HttpResponse::Ok().body(m3u)
 }
