@@ -52,7 +52,7 @@ pub async fn directory_index_to_playlist(
                     file.episode.unwrap_or_default()
                 ));
                 playlist.push(format!(
-                    "{}/{}?t={}",
+                    "{}{}?t={}",
                     hostname,
                     file.name.unwrap_or_default(),
                     token
