@@ -1,11 +1,11 @@
-use actix_web::{web, HttpRequest, HttpResponse, Responder};
-use crate::helpers::file_sort;
+use crate::helpers::{file_sort, storage_thing_sort};
 use crate::structs::{Directory, File, ParsedFile, State, StorageThing};
 use crate::INDEX;
+use actix_web::{web, HttpRequest, HttpResponse, Responder};
 use diesel::prelude::*;
 use diesel::r2d2;
-use serde::{Deserialize, Serialize};
 use qstring::QString;
+use serde::{Deserialize, Serialize};
 
 pub async fn directory_index_to_files(
     index: Directory,
@@ -34,17 +34,29 @@ pub async fn directory_index_to_files(
 }
 
 pub async fn directory_index_to_playlist(
-    index: Directory,
+    index: &mut Directory,
     token: &str,
     hostname: &str,
 ) -> Vec<String> {
-    let mut playlist: Vec<String> = vec![String::from("#EXTM3U"), format!("#PLAYLIST:{}", index.name)];
-    for f in index.files {
+    let mut playlist: Vec<String> =
+        vec![String::from("#EXTM3U"), format!("#PLAYLIST:{}", index.name)];
+    index.files.sort_by(|a, b| storage_thing_sort(a.clone(), b.clone()));
+    for f in index.files.clone() {
         match f {
-            StorageThing::Directory(_) => {},
+            StorageThing::Directory(_) => {}
             StorageThing::File(file) => {
-                playlist.push(format!("#EXTINF:0, [{}] {} - Episode {}", file.group.unwrap_or_default(), file.anime.unwrap_or_default(), file.episode.unwrap_or_default()));
-                playlist.push(format!("{}/{}?t={}", hostname, file.name.unwrap_or_default(), token));
+                playlist.push(format!(
+                    "#EXTINF:0, [{}] {} - Episode {}",
+                    file.group.unwrap_or_default(),
+                    file.anime.unwrap_or_default(),
+                    file.episode.unwrap_or_default()
+                ));
+                playlist.push(format!(
+                    "{}/{}?t={}",
+                    hostname,
+                    file.name.unwrap_or_default(),
+                    token
+                ));
             }
             StorageThing::Empty(_) => {}
         }
@@ -144,13 +156,11 @@ pub async fn playlist(req: HttpRequest, state: web::Data<State>) -> impl Respond
         .parse::<String>()
         .unwrap()
         .replace(&state.base_path, "/");
-    let qp =  QString::from(req.query_string());
+    let qp = QString::from(req.query_string());
     let token = qp.get("t").unwrap();
     let hostname = qp.get("host").unwrap();
-    let index = unsafe {
-        get_path_from_index(INDEX.clone().unwrap(), path, 0)
-    };
-    let playlist: Vec<String> = directory_index_to_playlist(index, token, hostname).await;
+    let mut index = unsafe { get_path_from_index(INDEX.clone().unwrap(), path, 0) };
+    let playlist: Vec<String> = directory_index_to_playlist(&mut index, token, hostname).await;
     let m3u = playlist.join("\n");
     HttpResponse::Ok().body(m3u)
 }

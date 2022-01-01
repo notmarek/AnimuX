@@ -21,6 +21,24 @@ use crate::structs::*;
 //     parsed_files
 // }
 
+pub fn storage_thing_sort(a: StorageThing, b: StorageThing) -> Ordering {
+    match a {
+        StorageThing::Directory(_) => Ordering::Less, 
+        StorageThing::File(file_a) => {
+            match b {
+                StorageThing::Directory(_) => {
+                    Ordering::Less
+                },
+                StorageThing::File(file_b) => file_sort(&file_a, &file_b),
+                StorageThing::Empty(_) => {
+                    Ordering::Less
+                }
+            }
+        },
+        StorageThing::Empty(_) => Ordering::Less
+    }
+}
+
 pub fn file_sort(a: &ParsedFile, b: &ParsedFile) -> Ordering {
     if a.kind.as_ref().unwrap() == "file"
         && b.kind.as_ref().unwrap() == "file"
