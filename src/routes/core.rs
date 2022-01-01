@@ -122,7 +122,7 @@ pub async fn files(req: HttpRequest, state: web::Data<State>) -> impl Responder 
     let path = req
         .match_info()
         .get("tail")
-        .unwrap()
+        .unwrap_or_default()
         .parse::<String>()
         .unwrap()
         .replace(&state.base_path, "/");
