@@ -18,6 +18,7 @@ use actix_web::HttpResponse;
 
 use actix_web::http::header::HeaderName;
 use actix_web::web::Data;
+use futures::lock::Mutex;
 use http::HeaderValue;
 use mango::Mango;
 use navidrome::Navidrome;
@@ -57,7 +58,7 @@ use crate::routes::user::register;
 
 use qstring::QString;
 
-static mut INDEX: Option<Directory> = None;
+// static mut INDEX: Option<Directory> = None;
 
 fn is_enabled(name: &str) -> bool {
     !name.is_empty() && (name.to_lowercase() == "true" || name.to_lowercase() == "yes")
@@ -187,11 +188,9 @@ async fn main() -> std::io::Result<()> {
 
     let base_path: String = env::var("BASE_PATH").unwrap_or_else(|_| "/".to_string());
     state.base_path = base_path.clone();
-    unsafe {
-        let mut i: Directory = index_folder(state.root_folder.clone(), true, &state.database).await;
-        i = flatten_index(flatten_index(i));
-        INDEX = Some(dynamic_merge(i));
-    }
+    let mut i: Directory = index_folder(state.root_folder.clone(), true, &state.database).await;
+    i = flatten_index(flatten_index(i));
+    let mut content_index: Mutex<Directory> = Mutex::new(dynamic_merge(i));
     HttpServer::new(move || {
         let st = state.clone();
         let mut app = App::new().wrap_fn(move |req, srv| {
@@ -406,7 +405,8 @@ async fn main() -> std::io::Result<()> {
             )
             .route(&format!("{}{{tail:.*}}", &base_path), web::get().to(files)) // Default route
             .app_data(Data::new(state.clone()));
-        app
+
+        app.app_data(Data::new(content_index.clone()))
     })
     .bind((address, port.parse::<u16>().unwrap()))?
     .run()

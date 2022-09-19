@@ -1,9 +1,10 @@
 use crate::helpers::{file_sort, storage_thing_sort};
 use crate::structs::{Directory, File, ParsedFile, State, StorageThing};
-use crate::INDEX;
+// use crate::INDEX;
 use actix_web::{web, HttpRequest, HttpResponse, Responder};
 use diesel::prelude::*;
 use diesel::r2d2;
+use futures::lock::Mutex;
 use qstring::QString;
 use serde::{Deserialize, Serialize};
 
@@ -40,7 +41,9 @@ pub async fn directory_index_to_playlist(
 ) -> Vec<String> {
     let mut playlist: Vec<String> =
         vec![String::from("#EXTM3U"), format!("#PLAYLIST:{}", index.name)];
-    index.files.sort_by(|a, b| storage_thing_sort(a.clone(), b.clone()));
+    index
+        .files
+        .sort_by(|a, b| storage_thing_sort(a.clone(), b.clone()));
     for f in index.files.clone() {
         match f {
             StorageThing::Directory(_) => {}
@@ -118,7 +121,11 @@ pub struct Enchanced {
     pub index: Vec<ParsedFile>,
 }
 
-pub async fn files(req: HttpRequest, state: web::Data<State>) -> impl Responder {
+pub async fn files(
+    req: HttpRequest,
+    state: web::Data<State>,
+    index_data: web::Data<Mutex<Directory>>,
+) -> impl Responder {
     let path = req
         .match_info()
         .get("tail")
@@ -126,29 +133,31 @@ pub async fn files(req: HttpRequest, state: web::Data<State>) -> impl Responder 
         .parse::<String>()
         .unwrap()
         .replace(&state.base_path, "/");
-    unsafe {
-        let index = get_path_from_index(INDEX.clone().unwrap(), path, 0);
-        let file = File {
-            name: Some(index.clone().name),
-            path: Some(index.clone().name),
-            kind: Some("directory".to_string()),
-            mtime: index.clone().mtime,
-            size: None,
-        };
-        let current = ParsedFile::from_file(file, &state.database).await;
-        let mut parsed_files = directory_index_to_files(index, &state.database).await;
-        parsed_files.sort_by(|a, b| file_sort(a, b));
-        crate::coolshit::encrypted_json_response(
-            Enchanced {
-                current,
-                index: parsed_files,
-            },
-            &state.response_secret,
-        )
-    }
+    let index = get_path_from_index(index_data.lock().await.clone(), path, 0);
+    let file = File {
+        name: Some(index.clone().name),
+        path: Some(index.clone().name),
+        kind: Some("directory".to_string()),
+        mtime: index.clone().mtime,
+        size: None,
+    };
+    let current = ParsedFile::from_file(file, &state.database).await;
+    let mut parsed_files = directory_index_to_files(index, &state.database).await;
+    parsed_files.sort_by(|a, b| file_sort(a, b));
+    crate::coolshit::encrypted_json_response(
+        Enchanced {
+            current,
+            index: parsed_files,
+        },
+        &state.response_secret,
+    )
 }
 
-pub async fn playlist(req: HttpRequest, state: web::Data<State>) -> impl Responder {
+pub async fn playlist(
+    req: HttpRequest,
+    state: web::Data<State>,
+    index_data: web::Data<Mutex<Directory>>,
+) -> impl Responder {
     let path = req
         .match_info()
         .get("tail")
@@ -159,7 +168,7 @@ pub async fn playlist(req: HttpRequest, state: web::Data<State>) -> impl Respond
     let qp = QString::from(req.query_string());
     let token = qp.get("t").unwrap();
     let hostname = qp.get("host").unwrap();
-    let mut index = unsafe { get_path_from_index(INDEX.clone().unwrap(), path, 0) };
+    let mut index = get_path_from_index(index_data.lock().await.clone(), path, 0);
     let playlist: Vec<String> = directory_index_to_playlist(&mut index, token, hostname).await;
     let m3u = playlist.join("\n");
     HttpResponse::Ok().body(m3u)
@@ -171,22 +180,24 @@ pub struct Search {
     pub query: String,
 }
 
-pub async fn filter_files(data: web::Query<Search>, state: web::Data<State>) -> impl Responder {
-    unsafe {
-        let index = search_dir(
-            INDEX.clone().unwrap(),
-            Directory {
-                name: "Search".to_string(),
-                files: vec![],
-                mtime: Some(String::new()),
-            },
-            String::new(),
-            data.query.clone(),
-        );
-        let mut parsed_files = directory_index_to_files(index, &state.database).await;
-        parsed_files.sort_by(|a, b| file_sort(a, b));
-        crate::coolshit::encrypted_json_response(parsed_files, &state.response_secret)
-    }
+pub async fn filter_files(
+    data: web::Query<Search>,
+    state: web::Data<State>,
+    index_data: web::Data<Mutex<Directory>>,
+) -> impl Responder {
+    let index = search_dir(
+        index_data.lock().await.clone().unwrap(),
+        Directory {
+            name: "Search".to_string(),
+            files: vec![],
+            mtime: Some(String::new()),
+        },
+        String::new(),
+        data.query.clone(),
+    );
+    let mut parsed_files = directory_index_to_files(index, &state.database).await;
+    parsed_files.sort_by(|a, b| file_sort(a, b));
+    crate::coolshit::encrypted_json_response(parsed_files, &state.response_secret)
 }
 
 // pub async fn files(req: HttpRequest, data: web::Data<State>) -> impl Responder {

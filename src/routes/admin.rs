@@ -4,11 +4,12 @@ use async_recursion::async_recursion;
 use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use diesel::r2d2;
+use futures::lock::Mutex;
 use std::fs;
 
 use crate::models::anime_info::AnimeInfo;
 use crate::structs::{Directory, File, ParsedFile, Response, State, StorageThing};
-use crate::INDEX;
+// use crate::INDEX;
 use serde::Deserialize;
 
 use crate::models::invites::Invite;
@@ -183,12 +184,11 @@ pub fn dynamic_merge(index: Directory) -> Directory {
     new_index
 }
 
-pub async fn index_files(state: web::Data<State>) -> impl Responder {
-    unsafe {
-        let mut i: Directory = index_folder(state.root_folder.clone(), true, &state.database).await;
-        i = flatten_index(flatten_index(i));
-        INDEX = Some(dynamic_merge(i));
-    }
+pub async fn index_files(state: web::Data<State>, content_index: web::Data<Mutex<Directory>>) -> impl Responder {
+    let mut i: Directory = index_folder(state.root_folder.clone(), true, &state.database).await;
+    i = flatten_index(flatten_index(i));
+    let mut new_index = content_index.lock().await;
+    *new_index = dynamic_merge(i);
 
     HttpResponse::Ok().json(Response {
         status: String::from("success"),

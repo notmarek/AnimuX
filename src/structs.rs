@@ -6,14 +6,13 @@ use crate::utils::anilist_scraper::search_anime;
 use serde::{Deserialize, Serialize};
 
 use std::fs;
-use std::lazy::SyncLazy;
-
+use once_cell::sync::Lazy;
 use anitomy::{Anitomy, ElementCategory};
 
 use diesel::prelude::*;
 use diesel::r2d2;
 
-pub static ANIME: SyncLazy<Vec<AnimeInfo>> = SyncLazy::new(|| {
+pub static ANIME: Lazy<Vec<AnimeInfo>> = Lazy::new(|| {
     let contents = fs::read_to_string("map.json");
     let mal_info: Vec<AnimeInfo> = serde_json::from_str(&contents.unwrap()).unwrap();
     mal_info
