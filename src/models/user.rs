@@ -61,7 +61,9 @@ impl User {
         let db = db.get().unwrap();
         let key: &[u8; 16] = &secret.as_bytes()[..16].try_into().unwrap();
         let cipher = Cipher::new_128(key);
-        let decoded = decode(token).unwrap_or_default();
+
+        let decoded = decode(&token)
+            .unwrap_or(base64::decode_config(&token, base64::URL_SAFE).unwrap_or_default());
         if decoded.is_empty() {
             return Err(String::from("Encrypted string seems fucked."));
         }
@@ -72,6 +74,7 @@ impl User {
             username: String::new(),
             password: String::new(),
             role: 0,
+            //099xxuDPIh7Cf4UWLY1JoBCiseA1zBeQaS7oY/MaYRqi2Rtx4oN/dR7bi2klBJ38BaQB9mIER0Uq8nSlSSfmxsY5vXCtXqfd05aKkIsyXUKCYBTZtYcGa31py07o4ltIJbKsWiU97qbsmkt8Xs0RfQyylGRY+3Nv3aRIUUNSWno=
         });
         match users.filter(id.eq(&data.id)).first::<User>(&db) {
             Ok(u) => Ok(u),

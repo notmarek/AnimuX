@@ -190,7 +190,7 @@ async fn main() -> std::io::Result<()> {
     state.base_path = base_path.clone();
     let mut i: Directory = index_folder(state.root_folder.clone(), true, &state.database).await;
     i = flatten_index(flatten_index(i));
-    let mut content_index: Directory = dynamic_merge(i);
+    let content_index: Directory = dynamic_merge(i);
     HttpServer::new(move || {
         let st = state.clone();
         let mut app = App::new().wrap_fn(move |req, srv| {
