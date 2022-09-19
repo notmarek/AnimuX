@@ -169,7 +169,12 @@ pub async fn playlist(
     let token = qp.get("t").unwrap();
     let hostname = qp.get("host").unwrap();
     let mut index = get_path_from_index(index_data.lock().await.clone(), path, 0);
-    let playlist: Vec<String> = directory_index_to_playlist(&mut index, token, hostname).await;
+    let playlist: Vec<String> = directory_index_to_playlist(
+        &mut index,
+        &base64::encode_config(base64::decode(token).unwrap(), base64::URL_SAFE),
+        hostname,
+    )
+    .await;
     let m3u = playlist.join("\n");
     HttpResponse::Ok().body(m3u)
 }
@@ -186,7 +191,7 @@ pub async fn filter_files(
     index_data: web::Data<Mutex<Directory>>,
 ) -> impl Responder {
     let index = search_dir(
-        index_data.lock().await.clone().unwrap(),
+        index_data.lock().await.clone(),
         Directory {
             name: "Search".to_string(),
             files: vec![],

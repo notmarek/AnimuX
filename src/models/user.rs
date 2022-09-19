@@ -2,7 +2,7 @@ use std::convert::TryInto;
 
 use crate::models::invites::Invite;
 use crate::schema::users;
-use base64::{decode, encode};
+use base64::{decode, encode_config};
 use diesel::prelude::*;
 use diesel::r2d2;
 use libaes::Cipher;
@@ -49,7 +49,7 @@ impl User {
         let key: &[u8; 16] = &secret.as_bytes()[..16].try_into().unwrap();
         let cipher = Cipher::new_128(key);
         let encrypted = cipher.cbc_encrypt(b"0000000000000000", data.as_bytes());
-        encode(encrypted)
+        encode_config(encrypted, base64::URL_SAFE)
     }
 
     pub fn from_token(
