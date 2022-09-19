@@ -23,19 +23,13 @@ use crate::structs::*;
 
 pub fn storage_thing_sort(a: StorageThing, b: StorageThing) -> Ordering {
     match a {
-        StorageThing::Directory(_) => Ordering::Less, 
-        StorageThing::File(file_a) => {
-            match b {
-                StorageThing::Directory(_) => {
-                    Ordering::Less
-                },
-                StorageThing::File(file_b) => file_sort(&file_a, &file_b),
-                StorageThing::Empty(_) => {
-                    Ordering::Less
-                }
-            }
+        StorageThing::Directory(_) => Ordering::Less,
+        StorageThing::File(file_a) => match b {
+            StorageThing::Directory(_) => Ordering::Less,
+            StorageThing::File(file_b) => file_sort(&file_a, &file_b),
+            StorageThing::Empty(_) => Ordering::Less,
         },
-        StorageThing::Empty(_) => Ordering::Less
+        StorageThing::Empty(_) => Ordering::Less,
     }
 }
 

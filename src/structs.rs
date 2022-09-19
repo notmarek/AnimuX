@@ -5,9 +5,9 @@ use crate::utils::anilist_scraper::search_anime;
 
 use serde::{Deserialize, Serialize};
 
-use std::fs;
-use once_cell::sync::Lazy;
 use anitomy::{Anitomy, ElementCategory};
+use once_cell::sync::Lazy;
+use std::fs;
 
 use diesel::prelude::*;
 use diesel::r2d2;

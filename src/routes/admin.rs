@@ -184,7 +184,10 @@ pub fn dynamic_merge(index: Directory) -> Directory {
     new_index
 }
 
-pub async fn index_files(state: web::Data<State>, content_index: web::Data<Mutex<Directory>>) -> impl Responder {
+pub async fn index_files(
+    state: web::Data<State>,
+    content_index: web::Data<Mutex<Directory>>,
+) -> impl Responder {
     let mut i: Directory = index_folder(state.root_folder.clone(), true, &state.database).await;
     i = flatten_index(flatten_index(i));
     let mut new_index = content_index.lock().await;

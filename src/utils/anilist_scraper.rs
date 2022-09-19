@@ -55,7 +55,7 @@ pub struct ALAnimeData {
 pub async fn get_anime_info(id: i32, client: Option<Client>) -> Result<ALAnimeData, String> {
     let client = client.unwrap_or_default();
 
-      let query: &str = "query ($id: Int) {
+    let query: &str = "query ($id: Int) {
           Media (id: $id, type: ANIME) {
             id
             title {

@@ -190,7 +190,7 @@ async fn main() -> std::io::Result<()> {
     state.base_path = base_path.clone();
     let mut i: Directory = index_folder(state.root_folder.clone(), true, &state.database).await;
     i = flatten_index(flatten_index(i));
-    let mut content_index: Mutex<Directory> = Mutex::new(dynamic_merge(i));
+    let mut content_index: Directory = dynamic_merge(i);
     HttpServer::new(move || {
         let st = state.clone();
         let mut app = App::new().wrap_fn(move |req, srv| {
@@ -406,7 +406,7 @@ async fn main() -> std::io::Result<()> {
             .route(&format!("{}{{tail:.*}}", &base_path), web::get().to(files)) // Default route
             .app_data(Data::new(state.clone()));
 
-        app.app_data(Data::new(content_index.clone()))
+        app.app_data(Data::new(Mutex::new(content_index.clone())))
     })
     .bind((address, port.parse::<u16>().unwrap()))?
     .run()

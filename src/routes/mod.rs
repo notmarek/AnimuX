@@ -1,10 +1,10 @@
 pub mod admin;
 pub mod core;
 // pub mod gdrive;
-pub mod mal;
-pub mod user;
 pub mod images;
+pub mod mal;
 pub mod requests;
 pub mod rssmission;
-pub mod test;
 pub mod star;
+pub mod test;
+pub mod user;

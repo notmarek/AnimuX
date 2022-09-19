@@ -54,11 +54,7 @@ impl Navidrome {
                 login.username
             )
         }
-        Ok(Self {
-            url,
-            client,
-            login,
-        })
+        Ok(Self { url, client, login })
     }
 
     pub async fn create_account(self, username: String, password: String) {
