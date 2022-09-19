@@ -74,7 +74,7 @@ impl User {
             username: String::new(),
             password: String::new(),
             role: 0,
-            //099xxuDPIh7Cf4UWLY1JoBCiseA1zBeQaS7oY/MaYRqi2Rtx4oN/dR7bi2klBJ38BaQB9mIER0Uq8nSlSSfmxsY5vXCtXqfd05aKkIsyXUKCYBTZtYcGa31py07o4ltIJbKsWiU97qbsmkt8Xs0RfQyylGRY+3Nv3aRIUUNSWno=
+            
         });
         match users.filter(id.eq(&data.id)).first::<User>(&db) {
             Ok(u) => Ok(u),
