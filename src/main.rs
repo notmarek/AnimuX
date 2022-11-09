@@ -52,6 +52,7 @@ use crate::routes::rssmission::add_matcher;
 use crate::routes::rssmission::current_cfg;
 use crate::routes::rssmission::remove_matcher;
 use crate::routes::user::all_users;
+use crate::routes::user::me;
 use crate::routes::user::check_token;
 use crate::routes::user::login;
 use crate::routes::user::register;
@@ -366,6 +367,10 @@ async fn main() -> std::io::Result<()> {
                 web::post().to(check_token),
             )
             .route(&format!("{}user/login", &base_path), web::post().to(login))
+            .route(
+                &format!("{}me", &base_path),
+                web::get().to(me),
+            )
             .route(
                 &format!("{}admin/all_users", &base_path),
                 web::get().to(all_users),

@@ -163,3 +163,25 @@ pub async fn all_users(state: web::Data<State>) -> impl Responder {
         &state.response_secret,
     )
 }
+
+
+pub async fn me(req: HttpRequest, state: web::Data<State>) -> impl Responder {
+    let user = User::from_token(
+        req.headers()
+            .get("authorization")
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .to_string(),
+        state.secret.clone(),
+        &state.database,
+    )
+    .unwrap();
+    crate::coolshit::encrypted_json_response(
+        Response {
+            status: String::from("success"),
+            data: user,
+        },
+        &state.response_secret,
+    )
+}
